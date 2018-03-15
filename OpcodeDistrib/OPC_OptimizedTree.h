@@ -24,16 +24,16 @@
 	#define IMPLEMENT_IMPLICIT_NODE(baseclass, volume)													\
 		public:																							\
 		/* Constructor / Destructor */																	\
-		__forceinline						baseclass() : mData(0)	{}									\
-		__forceinline						~baseclass()			{}									\
+		inline_								baseclass() : mData(0)	{}									\
+		inline_								~baseclass()			{}									\
 		/* Leaf test */																					\
-		__forceinline	BOOL				IsLeaf()		const	{ return mData&1;				}	\
+		inline_			BOOL				IsLeaf()		const	{ return mData&1;				}	\
 		/* Data access */																				\
-		__forceinline	const baseclass*	GetPos()		const	{ return (baseclass*)mData;		}	\
-		__forceinline	const baseclass*	GetNeg()		const	{ return ((baseclass*)mData)+1;	}	\
-		__forceinline	udword				GetPrimitive()	const	{ return (mData>>1);			}	\
+		inline_			const baseclass*	GetPos()		const	{ return (baseclass*)mData;		}	\
+		inline_			const baseclass*	GetNeg()		const	{ return ((baseclass*)mData)+1;	}	\
+		inline_			udword				GetPrimitive()	const	{ return (mData>>1);			}	\
 		/* Stats */																						\
-		__forceinline	udword				GetNodeSize()	const	{ return SIZEOFOBJECT;			}	\
+		inline_			udword				GetNodeSize()	const	{ return SIZEOFOBJECT;			}	\
 																										\
 						volume				mAABB;														\
 						udword				mData;
@@ -42,18 +42,18 @@
 	#define IMPLEMENT_NOLEAF_NODE(baseclass, volume)													\
 		public:																							\
 		/* Constructor / Destructor */																	\
-		__forceinline						baseclass() : mData(0), mData2(0)	{}						\
-		__forceinline						~baseclass()						{}						\
+		inline_								baseclass() : mData(0), mData2(0)	{}						\
+		inline_								~baseclass()						{}						\
 		/* Leaf tests */																				\
-		__forceinline	BOOL				HasLeaf()		const	{ return mData&1;				}	\
-		__forceinline	BOOL				HasLeaf2()		const	{ return mData2&1;				}	\
+		inline_			BOOL				HasLeaf()		const	{ return mData&1;				}	\
+		inline_			BOOL				HasLeaf2()		const	{ return mData2&1;				}	\
 		/* Data access */																				\
-		__forceinline	const baseclass*	GetPos()		const	{ return (baseclass*)mData;		}	\
-		__forceinline	const baseclass*	GetNeg()		const	{ return (baseclass*)mData2;	}	\
-		__forceinline	udword				GetPrimitive()	const	{ return (mData>>1);			}	\
-		__forceinline	udword				GetPrimitive2()	const	{ return (mData2>>1);			}	\
+		inline_			const baseclass*	GetPos()		const	{ return (baseclass*)mData;		}	\
+		inline_			const baseclass*	GetNeg()		const	{ return (baseclass*)mData2;	}	\
+		inline_			udword				GetPrimitive()	const	{ return (mData>>1);			}	\
+		inline_			udword				GetPrimitive2()	const	{ return (mData2>>1);			}	\
 		/* Stats */																						\
-		__forceinline	udword				GetNodeSize()	const	{ return SIZEOFOBJECT;			}	\
+		inline_			udword				GetNodeSize()	const	{ return SIZEOFOBJECT;			}	\
 																										\
 						volume				mAABB;														\
 						udword				mData;														\
@@ -63,9 +63,9 @@
 	{
 		IMPLEMENT_IMPLICIT_NODE(AABBCollisionNode, CollisionAABB)
 
-		__forceinline	float				GetVolume()		const	{ return mAABB.mExtents.x * mAABB.mExtents.y * mAABB.mExtents.z;	}
-		__forceinline	float				GetSize()		const	{ return mAABB.mExtents.SquareMagnitude();	}
-		__forceinline	udword				GetRadius()		const
+		inline_			float				GetVolume()		const	{ return mAABB.mExtents.x * mAABB.mExtents.y * mAABB.mExtents.z;	}
+		inline_			float				GetSize()		const	{ return mAABB.mExtents.SquareMagnitude();	}
+		inline_			udword				GetRadius()		const
 						{
 							udword* Bits = (udword*)&mAABB.mExtents.x;
 							udword Max = Bits[0];
@@ -87,7 +87,7 @@
 	{
 		IMPLEMENT_IMPLICIT_NODE(AABBQuantizedNode, QuantizedAABB)
 
-		__forceinline	uword				GetSize()		const
+		inline_			uword				GetSize()		const
 						{
 							const uword* Bits = mAABB.mExtents;
 							uword Max = Bits[0];
@@ -118,7 +118,7 @@
 		/* Build from a standard tree */																	\
 		virtual			bool				Build(AABBTree* tree);											\
 		/* Data access */																					\
-		__forceinline	const volume*		GetNodes()		const	{ return mNodes;					}	\
+		inline_			const volume*		GetNodes()		const	{ return mNodes;					}	\
 		/* Stats */																							\
 		virtual			udword				GetUsedBytes()	const	{ return mNbNodes*sizeof(volume);	}	\
 		private:																							\
@@ -132,7 +132,7 @@
 		virtual								~AABBOptimizedTree()					{}
 
 		// Data access
-		__forceinline	udword				GetNbNodes()	const	{ return mNbNodes;	}
+		inline_			udword				GetNbNodes()	const	{ return mNbNodes;	}
 
 		virtual			udword				GetUsedBytes()	const	= 0;
 		virtual			bool				Build(AABBTree* tree)	= 0;

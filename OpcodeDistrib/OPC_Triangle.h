@@ -13,21 +13,27 @@
 #define __ICETRIANGLE_H__
 
 	// An indexed triangle class.
-	class MESHMERIZER_API Triangle
+	class MESHMERIZER_API IndexedTriangle
 	{
 		public:
 		//! Constructor
-		__forceinline						Triangle()									{}
+		inline_					IndexedTriangle()									{}
 		//! Constructor
-		__forceinline						Triangle(udword r0, udword r1, udword r2)	{ mVRef[0]=r0; mVRef[1]=r1; mVRef[2]=r2; }
+		inline_					IndexedTriangle(udword r0, udword r1, udword r2)	{ mVRef[0]=r0; mVRef[1]=r1; mVRef[2]=r2; }
+		//! Copy constructor
+		inline_					IndexedTriangle(const IndexedTriangle& triangle)
+								{
+									mVRef[0] = triangle.mVRef[0];
+									mVRef[1] = triangle.mVRef[1];
+									mVRef[2] = triangle.mVRef[2];
+								}
 		//! Destructor
-		__forceinline						~Triangle()									{}
+		inline_					~IndexedTriangle()									{}
 		//! Vertex-references
-						udword				mVRef[3];
+				udword			mVRef[3];
 
 		// Methods
-						void				Center(const Point* verts, Point& center)	const;
-						bool				IsDegenerate()	const;
+				bool			IsDegenerate()	const;
 	};
 
 #endif // __ICETRIANGLE_H__

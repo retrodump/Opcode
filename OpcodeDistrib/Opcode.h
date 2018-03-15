@@ -22,15 +22,24 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Compilation messages
-#if defined(OPCODEDISTRIB_EXPORTS)
+#if defined(OPCODE_EXPORTS)
 	#pragma message("Compiling OPCODE")
-#elif !defined(OPCODEDISTRIB_EXPORTS)
+#elif !defined(OPCODE_EXPORTS)
 	#pragma message("Using OPCODE")
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Automatic linking
+	#ifndef BAN_OPCODE_AUTOLINK
+		#ifdef _DEBUG
+			#pragma comment(lib, "Opcode_D.lib")
+		#else
+			#pragma comment(lib, "Opcode.lib")
+		#endif
+	#endif
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Preprocessor
-#ifdef OPCODEDISTRIB_EXPORTS
+#ifdef OPCODE_EXPORTS
 	#define OPCODE_API __declspec(dllexport)
 #else
 	#define OPCODE_API __declspec(dllimport)
@@ -44,13 +53,7 @@
 
 	#include <stdio.h>
 	#include <stdlib.h>
-	#include <string.h>
-	#include <ctype.h>
 	#include <assert.h>
-	#include <shlobj.h>
-	#include <mmsystem.h>
-	#include <stdarg.h>
-	#include <time.h>
 	#include <float.h>
 
 	#ifndef ASSERT
@@ -61,50 +64,46 @@
 	#define	SetIceError		false
 	#define	EC_OUTOFMEMORY	"Out of memory"
 	#define	Alignment
-	#define ICECORE_API		OPCODE_API
-	#define	override(baseclass)	virtual
 
-	// IceCore includes
-	#include "IceTypes.h"
-	#include "IceFPU.h"
-	#include "IceMemoryMacros.h"
-	#include "IceContainer.h"
-	#include "IceRandom.h"
+	#include "OPC_Preprocessor.h"
+//	#undef ICECORE_API
+//	#define ICECORE_API	__declspec(dllimport)
+	#define ICECORE_API	OPCODE_API
+
+	#include "OPC_Types.h"
+	#include "OPC_FPU.h"
+	#include "OPC_MemoryMacros.h"
+	namespace IceCore
+	{
+		#include "OPC_Container.h"
+	}
+	using namespace IceCore;
 #endif
 
 #ifndef __ICEMATHS_H__
 	#include <Math.h>
-
 	#define ICEMATHS_API	OPCODE_API
-
-	class HPoint;
-	class Matrix3x3;
-	class Matrix4x4;
-	class Quat;
-	class PRS;
-	class PR;
-
-	// IceMaths includes
-	#include "IcePoint.h"
-	#include "IceHPoint.h"
-	#include "IceMatrix3x3.h"
-	#include "IceMatrix4x4.h"
-	#include "IceRay.h"
+	namespace IceMaths
+	{
+		#include "OPC_Point.h"
+		#include "OPC_Matrix3x3.h"
+		#include "OPC_Matrix4x4.h"
+		#include "OPC_Plane.h"
+		#include "OPC_Ray.h"
+	}
+	using namespace IceMaths;
 #endif
 
-
 #ifndef __MESHMERIZER_H__
-
 	#define MESHMERIZER_API	OPCODE_API
-
-	enum CubeIndex;
-	class Plane;
-	class ProgressiveEigen;
-
-	// Meshmerizer includes
-	#include "IceTriangle.h"
-	#include "IceAABB.h"
-	#include "IceBoundingSphere.h"
+	namespace Meshmerizer
+	{
+		#include "OPC_Triangle.h"
+		#include "OPC_AABB.h"
+		#include "OPC_OBB.h"
+		#include "OPC_BoundingSphere.h"
+	}
+	using namespace Meshmerizer;
 #endif
 
 	namespace Opcode
@@ -118,9 +117,13 @@
 		#include "OPC_Model.h"
 		#include "OPC_BVTCache.h"
 		#include "OPC_Collider.h"
+		#include "OPC_VolumeCollider.h"
 		#include "OPC_TreeCollider.h"
 		#include "OPC_RayCollider.h"
 		#include "OPC_SphereCollider.h"
+		#include "OPC_OBBCollider.h"
+		#include "OPC_AABBCollider.h"
+		#include "OPC_PlanesCollider.h"
 	}
 
 #endif // __OPCODE_H__

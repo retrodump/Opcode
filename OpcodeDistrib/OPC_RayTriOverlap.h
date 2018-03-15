@@ -14,7 +14,7 @@
  *	\return		true on overlap
  */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-__forceinline bool AABBRayCollider::RayTriOverlap(const Point& vert0, const Point& vert1, const Point& vert2, float& t, float& u, float& v)
+inline_ BOOL RayCollider::RayTriOverlap(const Point& vert0, const Point& vert1, const Point& vert2)
 {
 	// Stats
 	mNbRayPrimTests++;
@@ -31,54 +31,54 @@ __forceinline bool AABBRayCollider::RayTriOverlap(const Point& vert0, const Poin
 
 	if(mCulling)
 	{
-		if(det<LOCAL_EPSILON)							return false;
+		if(det<LOCAL_EPSILON)														return FALSE;
 		// From here, det is > 0. So we can use integer cmp.
 
 		// Calculate distance from vert0 to ray origin
 		Point tvec = mOrigin - vert0;
 
 		// Calculate U parameter and test bounds
-		u = tvec|pvec;
-//		if(IR(u)&0x80000000 || u>det)					return false;
-		if(IR(u)&0x80000000 || IR(u)>IR(det))			return false;
+		mStabbedFace.mU = tvec|pvec;
+//		if(IR(u)&0x80000000 || u>det)					return FALSE;
+		if(IR(mStabbedFace.mU)&0x80000000 || IR(mStabbedFace.mU)>IR(det))			return FALSE;
 
 		// Prepare to test V parameter
 		Point qvec = tvec^edge1;
 
 		// Calculate V parameter and test bounds
-		v = mDir|qvec;
-		if(IR(v)&0x80000000 || u+v>det)					return false;
+		mStabbedFace.mV = mDir|qvec;
+		if(IR(mStabbedFace.mV)&0x80000000 || mStabbedFace.mU+mStabbedFace.mV>det)	return FALSE;
 
 		// Calculate t, scale parameters, ray intersects triangle
-		t = edge2|qvec;
+		mStabbedFace.mDistance = edge2|qvec;
 		float inv_det = 1.0f / det;
-		t *= inv_det;
-		u *= inv_det;
-		v *= inv_det;
+		mStabbedFace.mDistance *= inv_det;
+		mStabbedFace.mU *= inv_det;
+		mStabbedFace.mV *= inv_det;
 	}
 	else
 	{
 		// the non-culling branch
-		if(det>-LOCAL_EPSILON && det<LOCAL_EPSILON)		return false;
+		if(det>-LOCAL_EPSILON && det<LOCAL_EPSILON)									return FALSE;
 		float inv_det = 1.0f / det;
 
 		// Calculate distance from vert0 to ray origin
 		Point tvec = mOrigin - vert0;
 
 		// Calculate U parameter and test bounds
-		u = (tvec|pvec) * inv_det;
-//		if(IR(u)&0x80000000 || u>1.0f)					return false;
-		if(IR(u)&0x80000000 || IR(u)>IEEE_1_0)			return false;
+		mStabbedFace.mU = (tvec|pvec) * inv_det;
+//		if(IR(u)&0x80000000 || u>1.0f)					return FALSE;
+		if(IR(mStabbedFace.mU)&0x80000000 || IR(mStabbedFace.mU)>IEEE_1_0)			return FALSE;
 
 		// prepare to test V parameter
 		Point qvec = tvec^edge1;
 
 		// Calculate V parameter and test bounds
-		v = (mDir|qvec) * inv_det;
-		if(IR(v)&0x80000000 || u+v>1.0f)				return false;
+		mStabbedFace.mV = (mDir|qvec) * inv_det;
+		if(IR(mStabbedFace.mV)&0x80000000 || mStabbedFace.mU+mStabbedFace.mV>1.0f)	return FALSE;
 
 		// Calculate t, ray intersects triangle
-		t = (edge2|qvec) * inv_det;
+		mStabbedFace.mDistance = (edge2|qvec) * inv_det;
 	}
-	return true;
+	return TRUE;
 }

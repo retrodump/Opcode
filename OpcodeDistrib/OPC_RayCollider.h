@@ -20,12 +20,12 @@
 #ifndef __OPC_RAYCOLLIDER_H__
 #define __OPC_RAYCOLLIDER_H__
 
-	class OPCODE_API AABBRayCollider : public Collider
+	class OPCODE_API RayCollider : public Collider
 	{
 		public:
 		// Constructor / Destructor
-											AABBRayCollider();
-		virtual								~AABBRayCollider();
+											RayCollider();
+		virtual								~RayCollider();
 		// Generic collision query
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -34,21 +34,22 @@
 		 *	- with GetContactStatus()
 		 *	- in the user-provided destination array
 		 *
-		 *	\param		worldray		[in] stabbing ray in world space
+		 *	\param		world_ray		[in] stabbing ray in world space
 		 *	\param		model			[in] Opcode model to collide with
-		 *	\param		world			[in] model's world matrix
+		 *	\param		world			[in] model's world matrix, or null
 		 *	\param		cache			[in] a possibly cached face index, or null
 		 *	\return		true if success
 		 *	\warning	SCALE NOT SUPPORTED. The matrices must contain rotation & translation parts only.
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-						bool				Collide(const Ray& worldray, OPCODE_Model* model, const Matrix4x4& world, udword* cache=null);
+							bool			Collide(const Ray& world_ray, OPCODE_Model* model, const Matrix4x4* world=null, udword* cache=null);
 
 		// Collision queries
-						bool				Collide(const Ray& worldray, const AABBCollisionTree* tree, const Matrix4x4& world, udword* cache=null);
-						bool				Collide(const Ray& worldray, const AABBNoLeafTree* tree, const Matrix4x4& world, udword* cache=null);
-						bool				Collide(const Ray& worldray, const AABBQuantizedTree* tree, const Matrix4x4& world, udword* cache=null);
-						bool				Collide(const Ray& worldray, const AABBQuantizedNoLeafTree* tree, const Matrix4x4& world, udword* cache=null);
+							bool			Collide(const Ray& world_ray, const AABBCollisionTree* tree,		const Matrix4x4* world=null, udword* cache=null);
+							bool			Collide(const Ray& world_ray, const AABBNoLeafTree* tree,			const Matrix4x4* world=null, udword* cache=null);
+							bool			Collide(const Ray& world_ray, const AABBQuantizedTree* tree,		const Matrix4x4* world=null, udword* cache=null);
+							bool			Collide(const Ray& world_ray, const AABBQuantizedNoLeafTree* tree,	const Matrix4x4* world=null, udword* cache=null);
+							bool			Collide(const Ray& world_ray, const AABBTree* tree, Container& box_indices);
 		// Settings
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -60,7 +61,7 @@
 		 *	\see		SetDestination(StabbedFaces* sf)
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline	void				SetClosestHit(bool flag)				{ mClosestHit	= flag;							}
+		inline_				void			SetClosestHit(bool flag)				{ mClosestHit	= flag;		}
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
@@ -71,18 +72,18 @@
 		 *	\see		SetDestination(StabbedFaces* sf)
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline	void				SetCulling(bool flag)					{ mCulling		= flag;							}
+		inline_				void			SetCulling(bool flag)					{ mCulling		= flag;		}
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
 		 *	Settings: sets the higher distance bound.
-		 *	\param		maxdist		[in] higher distance bound.
+		 *	\param		maxdist		[in] higher distance bound. Default = maximal value, for ray queries (else segment)
 		 *	\see		SetClosestHit(bool flag)
 		 *	\see		SetCulling(bool flag)
 		 *	\see		SetDestination(StabbedFaces* sf)
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline	void				SetMaxDist(float maxdist)				{ mMaxDist		= maxdist;						}
+		inline_				void			SetMaxDist(float maxdist=MAX_FLOAT)		{ mMaxDist		= maxdist;	}
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
@@ -93,10 +94,9 @@
 		 *	\see		SetMaxDist(float maxdist)
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline	void				SetDestination(CollisionFaces* cf)		{ mStabbedFaces	= cf;							}
+		inline_				void			SetDestination(CollisionFaces* cf)		{ mStabbedFaces	= cf;		}
 
 		// Stats
-
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
 		 *	Stats: gets the number of Ray-BV overlap tests after a collision query.
@@ -105,7 +105,7 @@
 		 *	\return		the number of Ray-BV tests performed during last query
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline	udword				GetNbRayBVTests()				const	{ return mNbRayBVTests;							}
+		inline_				udword			GetNbRayBVTests()				const	{ return mNbRayBVTests;		}
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
@@ -115,8 +115,9 @@
 		 *	\return		the number of Ray-Triangle tests performed during last query
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline	udword				GetNbRayPrimTests()				const	{ return mNbRayPrimTests;						}
+		inline_				udword			GetNbRayPrimTests()				const	{ return mNbRayPrimTests;	}
 
+		// In-out test
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
 		 *	Stats: gets the number of intersection found after a collision query. Can be used for in/out tests.
@@ -125,30 +126,27 @@
 		 *	\return		the number of valid intersections during last query
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline	udword				GetNbIntersections()			const	{ return mNbIntersections;						}
+		inline_				udword			GetNbIntersections()			const	{ return mNbIntersections;	}
 
-		// Callback control
-
-		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		/**
-		 *	Callback control: a method to setup user-data assigned to object callback.
-		 *	\param		data		[in] user-defined data
-		 *	\return		Self-Reference
-		 *	\see		SetCallbackObj(OPC_CALLBACK callback)
-		 */
-		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline	AABBRayCollider&	SetUserData(udword data)				{ mUserData	= data;				return *this;	}
-
+#ifdef OPC_USE_CALLBACKS
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
 		 *	Callback control: a method to setup object callback. Must provide triangle-vertices for a given triangle index.
 		 *	\param		callback	[in] user-defined callback
-		 *	\return		Self-Reference
-		 *	\see		SetUserData(udword data)
+		 *	\param		data		[in] user-defined data
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline	AABBRayCollider&	SetCallbackObj(OPC_CALLBACK callback)	{ mObjCallback	= callback;		return *this;	}
-
+		inline_				void			SetCallback(OPC_CALLBACK callback, udword data)			{ mObjCallback = callback;	mUserData = data;	}
+#else
+		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		/**
+		 *	Pointers control: a method to setup object pointers. Must provide access to faces and vertices for a given object.
+		 *	\param		faces	[in] pointer to faces
+		 *	\param		verts	[in] pointer to vertices
+		 */
+		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		inline_				void			SetPointers(const IndexedTriangle* faces, const Point* verts)	{ mFaces = faces;	mVerts = verts;				}
+#endif
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
 		 *	Validates current settings. You should call this method after all the settings and callbacks have been defined for a collider.
@@ -157,26 +155,34 @@
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		override(Collider)	const char*		ValidateSettings();
 
-		private:
+		protected:
 		// Ray in local space
 							Point			mOrigin;			//!< Ray origin
 							Point			mDir;				//!< Ray direction (normalized)
-							Point			mOneOverDir;		//!< Precomputed 1.0 / dir
+							Point			mFDir;				//!< fabsf(mDir)
+							Point			mData, mData2;
 		// Stabbed faces
+							CollisionFace	mStabbedFace;		//!< Current stabbed face
 							CollisionFaces*	mStabbedFaces;		//!< List of stabbed faces
+#ifdef OPC_USE_CALLBACKS
 		// User callback
 							udword			mUserData;			//!< User-defined data sent to callback
 							OPC_CALLBACK	mObjCallback;		//!< Object callback
+#else
+		// User pointers
+				const	IndexedTriangle*	mFaces;				//!< User-defined faces
+				const		Point*			mVerts;				//!< User-defined vertices
+#endif
 		// Stats
 							udword			mNbRayBVTests;		//!< Number of Ray-BV tests
 							udword			mNbRayPrimTests;	//!< Number of Ray-Primitive tests
+		// In-out test
 							udword			mNbIntersections;	//!< Number of valid intersections
 		// Dequantization coeffs
 							Point			mCenterCoeff;
 							Point			mExtentsCoeff;
 		// Settings
 							float			mMaxDist;			//!< Valid segment on the ray
-							float			mMaxDist2;			//!< Precomputed mMaxDist^2
 							bool			mClosestHit;		//!< Report closest hit only
 							bool			mCulling;			//!< Stab culled faces or not
 		// Internal methods
@@ -184,12 +190,18 @@
 							void			_Stab(const AABBNoLeafNode* node);
 							void			_Stab(const AABBQuantizedNode* node);
 							void			_Stab(const AABBQuantizedNoLeafNode* node);
+							void			_Stab(const AABBTreeNode* node, Container& box_indices);
+							void			_UnboundedStab(const AABBCollisionNode* node);
+							void			_UnboundedStab(const AABBNoLeafNode* node);
+							void			_UnboundedStab(const AABBQuantizedNode* node);
+							void			_UnboundedStab(const AABBQuantizedNoLeafNode* node);
+							void			_UnboundedStab(const AABBTreeNode* node, Container& box_indices);
 			// Overlap tests
-							bool			RayAABBOverlap(const Point& center, const Point& extents, Point& coord);
-							bool			RayTriOverlap(const Point& vert0, const Point& vert1, const Point& vert2, float& t, float& u, float& v);
+		inline_				BOOL			RayAABBOverlap(const Point& center, const Point& extents);
+		inline_				BOOL			SegmentAABBOverlap(const Point& center, const Point& extents);
+		inline_				BOOL			RayTriOverlap(const Point& vert0, const Point& vert1, const Point& vert2);
 			// Init methods
-							void			InitQuery(const Ray& worldray, const Matrix4x4& world);
-							bool			CheckTemporalCoherence(udword* faceid);
+							BOOL			InitQuery(const Ray& world_ray, const Matrix4x4* world=null, udword* faceid=null);
 	};
 
 #endif // __OPC_RAYCOLLIDER_H__

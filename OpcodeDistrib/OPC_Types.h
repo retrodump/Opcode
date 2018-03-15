@@ -48,6 +48,7 @@
 
 #define ICE_COMPILE_TIME_ASSERT(name, x)	typedef int ICE_Dummy_ ## name[(x) * 2 - 1]
 
+	ICE_COMPILE_TIME_ASSERT(bool,	sizeof(bool)==1);	// ...otherwise things might fail with VC++ 4.2 !
 	ICE_COMPILE_TIME_ASSERT(ubyte,	sizeof(ubyte)==1);
 	ICE_COMPILE_TIME_ASSERT(sbyte,	sizeof(sbyte)==1);
 	ICE_COMPILE_TIME_ASSERT(sword,	sizeof(sword)==2);
@@ -122,10 +123,10 @@
 	#define		MAX(a, b)       ((a) > (b) ? (a) : (b))			//!<	Returns the max value between a and b
 	#define		MAXMAX(a,b,c)   ((a) > (b) ? MAX (a,c) : MAX (b,c))	//!<	Returns the max value between a, b and c
 
-	template<class T>	__forceinline const T&	TMin	(const T& a, const T& b)	{ return b < a ? b : a;	}
-	template<class T>	__forceinline const T&	TMax	(const T& a, const T& b)	{ return a < b ? b : a;	}
-	template<class T>	__forceinline void		TSetMin	(T& a, const T& b)			{ if(a>b)	a = b;		}
-	template<class T>	__forceinline void		TSetMax	(T& a, const T& b)			{ if(a<b)	a = b;		}
+	template<class T>	inline_ const T&	TMin	(const T& a, const T& b)	{ return b < a ? b : a;	}
+	template<class T>	inline_ const T&	TMax	(const T& a, const T& b)	{ return a < b ? b : a;	}
+	template<class T>	inline_ void		TSetMin	(T& a, const T& b)			{ if(a>b)	a = b;		}
+	template<class T>	inline_ void		TSetMax	(T& a, const T& b)			{ if(a<b)	a = b;		}
 
 	#define		SQR(x)			((x)*(x))						//!<	Returns x square
 	#define		CUBE(x)			((x)*(x)*(x))					//!<	Returns x cube

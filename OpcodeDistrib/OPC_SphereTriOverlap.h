@@ -1,15 +1,14 @@
 
 // Original code by David Eberly in Magic.
-bool AABBSphereCollider::SphereTriOverlap(const Point& vert0, const Point& vert1, const Point& vert2, float& sqrdist, float& u, float& v)
+BOOL SphereCollider::SphereTriOverlap(const Point& vert0, const Point& vert1, const Point& vert2)
 {
 	// Stats
-	mNbSpherePrimTests++;
+	mNbVolumePrimTests++;
 
-	Point TriOrigin	= vert0;
 	Point TriEdge0	= vert1 - vert0;
 	Point TriEdge1	= vert2 - vert0;
 
-	Point kDiff	= TriOrigin - mCenter;
+	Point kDiff	= vert0 - mCenter;
 	float fA00	= TriEdge0.SquareMagnitude();
 	float fA01	= TriEdge0 | TriEdge1;
 	float fA11	= TriEdge1.SquareMagnitude();
@@ -17,8 +16,9 @@ bool AABBSphereCollider::SphereTriOverlap(const Point& vert0, const Point& vert1
 	float fB1	= kDiff | TriEdge1;
 	float fC	= kDiff.SquareMagnitude();
 	float fDet	= fabsf(fA00*fA11 - fA01*fA01);
-	u	= fA01*fB1-fA11*fB0;
-	v	= fA01*fB0-fA00*fB1;
+	float u		= fA01*fB1-fA11*fB0;
+	float v		= fA01*fB0-fA00*fB1;
+	float SqrDist;
 
 	if(u + v <= fDet)
 	{
@@ -29,75 +29,31 @@ bool AABBSphereCollider::SphereTriOverlap(const Point& vert0, const Point& vert1
 				if(fB0 < 0.0f)
 				{
 					v = 0.0f;
-					if(-fB0 >= fA00)
-					{
-						u = 1.0f;
-						sqrdist = fA00+2.0f*fB0+fC;
-					}
-					else
-					{
-						u = -fB0/fA00;
-						sqrdist = fB0*u+fC;
-					}
+					if(-fB0>=fA00)			{ u = 1.0f;			SqrDist = fA00+2.0f*fB0+fC;	}
+					else					{ u = -fB0/fA00;	SqrDist = fB0*u+fC;			}
 				}
 				else
 				{
 					u = 0.0f;
-					if(fB1 >= 0.0f)
-					{
-						v = 0.0f;
-						sqrdist = fC;
-					}
-					else if(-fB1 >= fA11)
-					{
-						v = 1.0f;
-						sqrdist = fA11+2.0f*fB1+fC;
-					}
-					else
-					{
-						v = -fB1/fA11;
-						sqrdist = fB1*v+fC;
-					}
+					if(fB1>=0.0f)			{ v = 0.0f;			SqrDist = fC;				}
+					else if(-fB1>=fA11)		{ v = 1.0f;			SqrDist = fA11+2.0f*fB1+fC;	}
+					else					{ v = -fB1/fA11;	SqrDist = fB1*v+fC;			}
 				}
 			}
 			else  // region 3
 			{
 				u = 0.0f;
-				if(fB1 >= 0.0f)
-				{
-					v = 0.0f;
-					sqrdist = fC;
-				}
-				else if(-fB1 >= fA11)
-				{
-					v = 1.0f;
-					sqrdist = fA11+2.0f*fB1+fC;
-				}
-				else
-				{
-					v = -fB1/fA11;
-					sqrdist = fB1*v+fC;
-				}
+				if(fB1>=0.0f)				{ v = 0.0f;			SqrDist = fC;				}
+				else if(-fB1>=fA11)			{ v = 1.0f;			SqrDist = fA11+2.0f*fB1+fC;	}
+				else						{ v = -fB1/fA11;	SqrDist = fB1*v+fC;			}
 			}
 		}
 		else if(v < 0.0f)  // region 5
 		{
 			v = 0.0f;
-			if(fB0 >= 0.0f)
-			{
-				u = 0.0f;
-				sqrdist = fC;
-			}
-			else if(-fB0 >= fA00)
-			{
-				u = 1.0f;
-				sqrdist = fA00+2.0f*fB0+fC;
-			}
-			else
-			{
-				u = -fB0/fA00;
-				sqrdist = fB0*u+fC;
-			}
+			if(fB0>=0.0f)					{ u = 0.0f;			SqrDist = fC;				}
+			else if(-fB0>=fA00)				{ u = 1.0f;			SqrDist = fA00+2.0f*fB0+fC;	}
+			else							{ u = -fB0/fA00;	SqrDist = fB0*u+fC;			}
 		}
 		else  // region 0
 		{
@@ -106,14 +62,14 @@ bool AABBSphereCollider::SphereTriOverlap(const Point& vert0, const Point& vert1
 			{
 				u = 0.0f;
 				v = 0.0f;
-				sqrdist = MAX_FLOAT;
+				SqrDist = MAX_FLOAT;
 			}
 			else
 			{
 				float fInvDet = 1.0f/fDet;
 				u *= fInvDet;
 				v *= fInvDet;
-				sqrdist = u*(fA00*u+fA01*v+2.0f*fB0) + v*(fA01*u+fA11*v+2.0f*fB1)+fC;
+				SqrDist = u*(fA00*u+fA01*v+2.0f*fB0) + v*(fA01*u+fA11*v+2.0f*fB1)+fC;
 			}
 		}
 	}
@@ -133,33 +89,21 @@ bool AABBSphereCollider::SphereTriOverlap(const Point& vert0, const Point& vert1
 				{
 					u = 1.0f;
 					v = 0.0f;
-					sqrdist = fA00+2.0f*fB0+fC;
+					SqrDist = fA00+2.0f*fB0+fC;
 				}
 				else
 				{
 					u = fNumer/fDenom;
 					v = 1.0f - u;
-					sqrdist = u*(fA00*u+fA01*v+2.0f*fB0) + v*(fA01*u+fA11*v+2.0f*fB1)+fC;
+					SqrDist = u*(fA00*u+fA01*v+2.0f*fB0) + v*(fA01*u+fA11*v+2.0f*fB1)+fC;
 				}
 			}
 			else
 			{
 				u = 0.0f;
-				if(fTmp1 <= 0.0f)
-				{
-					v = 1.0f;
-					sqrdist = fA11+2.0f*fB1+fC;
-				}
-				else if(fB1 >= 0.0f)
-				{
-					v = 0.0f;
-					sqrdist = fC;
-				}
-				else
-				{
-					v = -fB1/fA11;
-					sqrdist = fB1*v+fC;
-				}
+				if(fTmp1 <= 0.0f)		{ v = 1.0f;			SqrDist = fA11+2.0f*fB1+fC;	}
+				else if(fB1 >= 0.0f)	{ v = 0.0f;			SqrDist = fC;				}
+				else					{ v = -fB1/fA11;	SqrDist = fB1*v+fC;			}
 			}
 		}
 		else if(v < 0.0f)  // region 6
@@ -174,33 +118,21 @@ bool AABBSphereCollider::SphereTriOverlap(const Point& vert0, const Point& vert1
 				{
 					v = 1.0f;
 					u = 0.0f;
-					sqrdist = fA11+2.0f*fB1+fC;
+					SqrDist = fA11+2.0f*fB1+fC;
 				}
 				else
 				{
 					v = fNumer/fDenom;
 					u = 1.0f - v;
-					sqrdist = u*(fA00*u+fA01*v+2.0f*fB0) + v*(fA01*u+fA11*v+2.0f*fB1)+fC;
+					SqrDist = u*(fA00*u+fA01*v+2.0f*fB0) + v*(fA01*u+fA11*v+2.0f*fB1)+fC;
 				}
 			}
 			else
 			{
 				v = 0.0f;
-				if(fTmp1 <= 0.0f)
-				{
-					u = 1.0f;
-					sqrdist = fA00+2.0f*fB0+fC;
-				}
-				else if(fB0 >= 0.0f)
-				{
-					u = 0.0f;
-					sqrdist = fC;
-				}
-				else
-				{
-					u = -fB0/fA00;
-					sqrdist = fB0*u+fC;
-				}
+				if(fTmp1 <= 0.0f)		{ u = 1.0f;			SqrDist = fA00+2.0f*fB0+fC;	}
+				else if(fB0 >= 0.0f)	{ u = 0.0f;			SqrDist = fC;				}
+				else					{ u = -fB0/fA00;	SqrDist = fB0*u+fC;			}
 			}
 		}
 		else  // region 1
@@ -210,7 +142,7 @@ bool AABBSphereCollider::SphereTriOverlap(const Point& vert0, const Point& vert1
 			{
 				u = 0.0f;
 				v = 1.0f;
-				sqrdist = fA11+2.0f*fB1+fC;
+				SqrDist = fA11+2.0f*fB1+fC;
 			}
 			else
 			{
@@ -219,19 +151,17 @@ bool AABBSphereCollider::SphereTriOverlap(const Point& vert0, const Point& vert1
 				{
 					u = 1.0f;
 					v = 0.0f;
-					sqrdist = fA00+2.0f*fB0+fC;
+					SqrDist = fA00+2.0f*fB0+fC;
 				}
 				else
 				{
 					u = fNumer/fDenom;
 					v = 1.0f - u;
-					sqrdist = u*(fA00*u+fA01*v+2.0f*fB0) + v*(fA01*u+fA11*v+2.0f*fB1)+fC;
+					SqrDist = u*(fA00*u+fA01*v+2.0f*fB0) + v*(fA01*u+fA11*v+2.0f*fB1)+fC;
 				}
 			}
 		}
 	}
 
-	sqrdist = fabsf(sqrdist);
-
-	return sqrdist < mRadius2;
+	return fabsf(SqrDist) < mRadius2;
 }

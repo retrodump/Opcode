@@ -18,9 +18,9 @@
 	{
 		public:
 		// Constructor / Destructor
-										Container();
-										Container(udword size, float growthfactor);
-										~Container();
+								Container();
+								Container(udword size, float growth_factor);
+								~Container();
 		// Management
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
@@ -35,15 +35,26 @@
 		 *	\return		Self-Reference
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline	Container&		Add(udword entry)
-						{
-							// Resize if needed
-							if(mCurNbEntries==mMaxNbEntries)	Resize();
+		inline_	Container&		Add(udword entry)
+				{
+					// Resize if needed
+					if(mCurNbEntries==mMaxNbEntries)	Resize();
 
-							// Add new entry
-							mEntries[mCurNbEntries++]	= entry;
-							return *this;
-						}
+					// Add new entry
+					mEntries[mCurNbEntries++]	= entry;
+					return *this;
+				}
+
+		inline_	Container&		Add(const udword* entries, udword nb)
+				{
+					// Resize if needed
+					if(mCurNbEntries+nb>mMaxNbEntries)	Resize(nb);
+
+					// Add new entry
+					CopyMemory(&mEntries[mCurNbEntries], entries, nb*sizeof(udword));
+					mCurNbEntries+=nb;
+					return *this;
+				}
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
@@ -58,124 +69,148 @@
 		 *	\return		Self-Reference
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline	Container&		Add(float entry)
-						{
-							// Resize if needed
-							if(mCurNbEntries==mMaxNbEntries)	Resize();
+		inline_	Container&		Add(float entry)
+				{
+					// Resize if needed
+					if(mCurNbEntries==mMaxNbEntries)	Resize();
 
-							// Add new entry
-							mEntries[mCurNbEntries++]	= IR(entry);
-							return *this;
-						}
+					// Add new entry
+					mEntries[mCurNbEntries++]	= IR(entry);
+					return *this;
+				}
+
+		inline_	Container&		Add(const float* entries, udword nb)
+				{
+					// Resize if needed
+					if(mCurNbEntries+nb>mMaxNbEntries)	Resize(nb);
+
+					// Add new entry
+					CopyMemory(&mEntries[mCurNbEntries], entries, nb*sizeof(float));
+					mCurNbEntries+=nb;
+					return *this;
+				}
 
 		//! Add unique [slow]
-						Container&		AddUnique(udword entry)
-						{
-							if(!Contains(entry))	Add(entry);
-							return *this;
-						}
+				Container&		AddUnique(udword entry)
+				{
+					if(!Contains(entry))	Add(entry);
+					return *this;
+				}
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
-		 *	A method to clear the container. All stored values are deleted, and it frees used ram.
+		 *	Clears the container. All stored values are deleted, and it frees used ram.
 		 *	\see		Reset()
 		 *	\return		Self-Reference
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline	Container&		Empty()
-						{
-							#ifdef CONTAINER_STATS
-							mUsedRam-=mMaxNbEntries*sizeof(udword);
-							#endif
-							DELETEARRAY(mEntries);
-							mCurNbEntries = mMaxNbEntries = 0;
-							return *this;
-						}
+		inline_	Container&		Empty()
+				{
+					#ifdef CONTAINER_STATS
+					mUsedRam-=mMaxNbEntries*sizeof(udword);
+					#endif
+					DELETEARRAY(mEntries);
+					mCurNbEntries = mMaxNbEntries = 0;
+					return *this;
+				}
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
-		 *	A method to reset the container. Stored values are discarded but the buffer is kept so that further calls don't need resizing again.
+		 *	Resets the container. Stored values are discarded but the buffer is kept so that further calls don't need resizing again.
 		 *	That's a kind of temporal coherence.
 		 *	\see		Empty()
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline	void			Reset()
-						{
-							// Avoid the write if possible
-							// ### CMOV
-							if(mCurNbEntries)	mCurNbEntries = 0;
-						}
+		inline_	void			Reset()
+				{
+					// Avoid the write if possible
+					// ### CMOV
+					if(mCurNbEntries)	mCurNbEntries = 0;
+				}
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
-		 *	A method to set the initial size of the container. If it already contains something, it's discarded.
+		 *	Sets the initial size of the container. If it already contains something, it's discarded.
 		 *	\param		nb		[in] Number of entries
 		 *	\return		true if success
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-						bool			SetSize(udword nb);
+				bool			SetSize(udword nb);
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
-		 *	A method to refit the container and get rid of unused bytes.
+		 *	Refits the container and get rid of unused bytes.
 		 *	\return		true if success
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-						bool			Refit();
+				bool			Refit();
 
-		// A method to check whether the container already contains a given value.
-						bool			Contains(udword entry, udword* location=null) const;
-		// A method to delete an entry - doesn't preserve insertion order.
-						bool			Delete(udword entry);
-		// A method to delete an entry - does preserve insertion order.
-						bool			DeleteKeepingOrder(udword entry);
-		//! A method to delete the very last entry.
-		__forceinline	void			DeleteLastEntry()						{ if(mCurNbEntries)	mCurNbEntries--;			}
-		//! A method to delete the entry whose index is given
-		__forceinline	void			DeleteIndex(udword index)				{ mEntries[index] = mEntries[--mCurNbEntries];	}
+		// Checks whether the container already contains a given value.
+				bool			Contains(udword entry, udword* location=null) const;
+		// Deletes an entry - doesn't preserve insertion order.
+				bool			Delete(udword entry);
+		// Deletes an entry - does preserve insertion order.
+				bool			DeleteKeepingOrder(udword entry);
+		//! Deletes the very last entry.
+		inline_	void			DeleteLastEntry()						{ if(mCurNbEntries)	mCurNbEntries--;			}
+		//! Deletes the entry whose index is given
+		inline_	void			DeleteIndex(udword index)				{ mEntries[index] = mEntries[--mCurNbEntries];	}
 
 		// Helpers
-						Container&		FindNext(udword& entry, bool wrap=false);
-						Container&		FindPrev(udword& entry, bool wrap=false);
+				Container&		FindNext(udword& entry, bool wrap=false);
+				Container&		FindPrev(udword& entry, bool wrap=false);
 		// Data access.
-		__forceinline	udword			GetNbEntries()					const	{ return mCurNbEntries;		}	//!< Returns the current number of entries.
-		__forceinline	udword			GetEntry(udword i)				const	{ return mEntries[i];		}	//!< Returns ith entry
-		__forceinline	udword*			GetEntries()					const	{ return mEntries;			}	//!< Returns the list of entries.
+		inline_	udword			GetNbEntries()					const	{ return mCurNbEntries;		}	//!< Returns the current number of entries.
+		inline_	udword			GetEntry(udword i)				const	{ return mEntries[i];		}	//!< Returns ith entry
+		inline_	udword*			GetEntries()					const	{ return mEntries;			}	//!< Returns the list of entries.
 
 		// Growth control
-		__forceinline	float			GetGrowthFactor()				const	{ return mGrowthFactor;		}	//!< Returns the growth factor
-		__forceinline	void			SetGrowthFactor(float growth)			{ mGrowthFactor = growth;	}	//!< Sets the growth factor
+		inline_	float			GetGrowthFactor()				const	{ return mGrowthFactor;		}	//!< Returns the growth factor
+		inline_	void			SetGrowthFactor(float growth)			{ mGrowthFactor = growth;	}	//!< Sets the growth factor
 
 		//! Access as an array
-		__forceinline	udword&			operator[](udword i)			const	{ ASSERT(i>=0 && i<mCurNbEntries); return mEntries[i];	}
+		inline_	udword&			operator[](udword i)			const	{ ASSERT(i>=0 && i<mCurNbEntries); return mEntries[i];	}
 
 		// Stats
-						udword			GetUsedRam()					const;
+				udword			GetUsedRam()					const;
 
 		//! Operator for Container A = Container B
-						void			operator = (const Container& object)
-						{
-							SetSize(object.GetNbEntries());
-							CopyMemory(mEntries, object.GetEntries(), mMaxNbEntries*sizeof(udword));
-							mCurNbEntries = mMaxNbEntries;
-						}
+				void			operator = (const Container& object)
+				{
+					SetSize(object.GetNbEntries());
+					CopyMemory(mEntries, object.GetEntries(), mMaxNbEntries*sizeof(udword));
+					mCurNbEntries = mMaxNbEntries;
+				}
 
 #ifdef CONTAINER_STATS
-		__forceinline	udword			GetNbContainers()				const	{ return mNbContainers;		}
-		__forceinline	udword			GetTotalBytes()					const	{ return mUsedRam;			}
+		inline_	udword			GetNbContainers()				const	{ return mNbContainers;		}
+		inline_	udword			GetTotalBytes()					const	{ return mUsedRam;			}
 		private:
 
-		static			udword			mNbContainers;		//!< Number of containers around
-		static			udword			mUsedRam;			//!< Amount of bytes used by containers in the system
+		static	udword			mNbContainers;		//!< Number of containers around
+		static	udword			mUsedRam;			//!< Amount of bytes used by containers in the system
 #endif
 		private:
 		// Resizing
-						bool			Resize();
+				bool			Resize(udword needed=1);
 		// Data
-						udword			mMaxNbEntries;		//!< Maximum possible number of entries
-						udword			mCurNbEntries;		//!< Current number of entries
-						udword*			mEntries;			//!< List of entries
-						float			mGrowthFactor;		//!< Resize: new number of entries = old number * mGrowthFactor
+				udword			mMaxNbEntries;		//!< Maximum possible number of entries
+				udword			mCurNbEntries;		//!< Current number of entries
+				udword*			mEntries;			//!< List of entries
+				float			mGrowthFactor;		//!< Resize: new number of entries = old number * mGrowthFactor
+	};
+
+	class ICECORE_API Pairs : public Container
+	{
+		public:
+		// Constructor / Destructor
+		inline_				Pairs()						{}
+		inline_				~Pairs()					{}
+
+		inline_	udword		GetNbPairs()	const		{ return GetNbEntries()>>1;					}
+		inline_	Pair*		GetPairs()		const		{ return (Pair*)GetEntries();				}
+
+				Pairs&		AddPair(const Pair& p)		{ Add(p.id0).Add(p.id1);	return *this;	}
 	};
 
 #endif // __ICECONTAINER_H__

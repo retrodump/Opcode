@@ -21,7 +21,7 @@
  *
  *	\class		AABBTreeNode
  *	\author		Pierre Terdiman
- *	\version	1.0
+ *	\version	1.2
  *	\date		March, 20, 2001
 */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -37,7 +37,7 @@
  *
  *	\class		AABBTree
  *	\author		Pierre Terdiman
- *	\version	1.0
+ *	\version	1.2
  *	\date		March, 20, 2001
 */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -72,17 +72,18 @@ AABBTreeNode::~AABBTreeNode()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
- *	A method to split the node along a given axis.
+ *	Splits the node along a given axis.
  *	The list of indices is reorganized according to the split values.
  *	\param		axis		[in] splitting axis index
  *	\param		builder		[in] the tree builder
  *	\return		the number of primitives assigned to the first child
+ *	\warning	this method reorganizes the internal list of primitives
  */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 udword AABBTreeNode::Split(udword axis, AABBTreeBuilder* builder)
 {
-	// Middle of the axis = our split value
-	float SplitValue = mBV.GetCenter(axis);
+	// Get node split value
+	float SplitValue = builder->GetSplittingValue(mNodePrimitives, mNbPrimitives, mBV, axis);
 
 	udword NbPos = 0;
 	// Loop through all node-related primitives. Their indices range from mNodePrimitives[0] to mNodePrimitives[mNbPrimitives-1].
@@ -112,7 +113,7 @@ udword AABBTreeNode::Split(udword axis, AABBTreeBuilder* builder)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
- *	A method to subdivide the node.
+ *	Subdivides the node.
  *	
  *	          N
  *	        /   \
@@ -246,9 +247,9 @@ bool AABBTreeNode::Subdivide(AABBTreeBuilder* builder)
 	else if(builder->mRules&SPLIT_FIFTY)
 	{
 		// Don't even bother splitting (mainly a performance test)
-		ValidSplit = false;
+		NbPos = mNbPrimitives>>1;
 	}
-	else return false;
+	else return false;	// Unknown splitting rules
 
 	// Check the subdivision has been successful
 	if(!ValidSplit)
@@ -256,8 +257,12 @@ bool AABBTreeNode::Subdivide(AABBTreeBuilder* builder)
 		// Here, all boxes lie in the same sub-space. Two strategies:
 		// - if the tree *must* be complete, make an arbitrary 50-50 split
 		// - else stop subdividing
-		if(builder->mRules&SPLIT_COMPLETE)	NbPos = mNbPrimitives>>1;
-		else								return true;
+		if(builder->mRules&SPLIT_COMPLETE)
+		{
+			builder->IncreaseNbInvalidSplits();
+			NbPos = mNbPrimitives>>1;
+		}
+		else return true;
 	}
 
 	// Now create children and assign their pointers.
@@ -284,16 +289,17 @@ bool AABBTreeNode::Subdivide(AABBTreeBuilder* builder)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void AABBTreeNode::_BuildHierarchy(AABBTreeBuilder* builder)
 {
-	// 1) Compute the global box for current node
+	// 1) Compute the global box for current node. The box is stored in mBV.
 	builder->ComputeGlobalBox(mNodePrimitives, mNbPrimitives, mBV);
 
-	// 2) Subdivide
+	// 2) Subdivide current node
 	Subdivide(builder);
 
 	// 3) Recurse
 	if(mP)	mP->_BuildHierarchy(builder);
 	if(mN)	mN->_BuildHierarchy(builder);
 }
+
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -317,7 +323,7 @@ AABBTree::~AABBTree()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
- *	A method to build a generic AABB tree from a tree builder.
+ *	Builds a generic AABB tree from a tree builder.
  *	\param		builder		[in] the tree builder
  *	\return		true if success
  */
@@ -327,8 +333,9 @@ bool AABBTree::Build(AABBTreeBuilder* builder)
 	// Checkings
 	if(!builder || !builder->mNbPrimitives)	return false;
 
-	// Init count
+	// Init stats
 	builder->SetCount(1);
+	builder->SetNbInvalidSplits(0);
 
 	// Initialize indices. This list will be modified during build.
 	DELETEARRAY(mIndices);
@@ -351,7 +358,7 @@ bool AABBTree::Build(AABBTreeBuilder* builder)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
- *	A method to compute the depth of the tree.
+ *	Computes the depth of the tree.
  *	A well-balanced tree should have a log(n) depth. A degenerate tree O(n) depth.
  *	\return		depth of the tree
  */
@@ -382,7 +389,7 @@ udword AABBTree::ComputeDepth() const
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
- *	A method to compute the number of bytes used by the tree.
+ *	Computes the number of bytes used by the tree.
  *	\return		number of bytes used
  */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -395,7 +402,7 @@ udword AABBTree::GetUsedBytes() const
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
- *	A method to check the tree is a complete tree or not.
+ *	Checks the tree is a complete tree or not.
  *	A complete tree is made of 2*N-1 nodes, where N is the number of primitives in the tree.
  *	\return		true for complete trees
  */

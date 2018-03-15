@@ -1,24 +1,24 @@
-# Microsoft Developer Studio Project File - Name="OpcodeDistrib" - Package Owner=<4>
+# Microsoft Developer Studio Project File - Name="Opcode" - Package Owner=<4>
 # Microsoft Developer Studio Generated Build File, Format Version 6.00
 # ** DO NOT EDIT **
 
 # TARGTYPE "Win32 (x86) Dynamic-Link Library" 0x0102
 
-CFG=OpcodeDistrib - Win32 Debug
+CFG=Opcode - Win32 Debug
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
-!MESSAGE NMAKE /f "OpcodeDistrib.mak".
+!MESSAGE NMAKE /f "Opcode.mak".
 !MESSAGE 
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "OpcodeDistrib.mak" CFG="OpcodeDistrib - Win32 Debug"
+!MESSAGE NMAKE /f "Opcode.mak" CFG="Opcode - Win32 Debug"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
-!MESSAGE "OpcodeDistrib - Win32 Release" (based on "Win32 (x86) Dynamic-Link Library")
-!MESSAGE "OpcodeDistrib - Win32 Debug" (based on "Win32 (x86) Dynamic-Link Library")
+!MESSAGE "Opcode - Win32 Release" (based on "Win32 (x86) Dynamic-Link Library")
+!MESSAGE "Opcode - Win32 Debug" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE 
 
 # Begin Project
@@ -29,7 +29,7 @@ CPP=cl.exe
 MTL=midl.exe
 RSC=rc.exe
 
-!IF  "$(CFG)" == "OpcodeDistrib - Win32 Release"
+!IF  "$(CFG)" == "Opcode - Win32 Release"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 0
@@ -42,8 +42,8 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "OPCODEDISTRIB_EXPORTS" /Yu"stdafx.h" /FD /c
-# ADD CPP /nologo /G6 /MD /W3 /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "OPCODEDISTRIB_EXPORTS" /Yu"stdafx.h" /FD /c
+# ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "OPCODE_EXPORTS" /Yu"stdafx.h" /FD /c
+# ADD CPP /nologo /G6 /MT /W3 /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "OPCODE_EXPORTS" /Yu"stdafx.h" /FD /QIfist /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x40c /d "NDEBUG"
@@ -53,13 +53,14 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 /nologo /dll /machine:I386 /out:"Release/Opcode.dll"
+# ADD LINK32 /nologo /dll /machine:I386 /out:"Y:\dll\Opcode.dll"
+# SUBTRACT LINK32 /debug
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
-PostBuild_Cmds=xcopy release\Opcode.lib y:\lib /Q /Y	xcopy *.h Y:\inc /Q /Y	del Y:\inc\stdafx.h
+PostBuild_Cmds=xcopy release\Opcode.lib y:\lib /Q /Y
 # End Special Build Tool
 
-!ELSEIF  "$(CFG)" == "OpcodeDistrib - Win32 Debug"
+!ELSEIF  "$(CFG)" == "Opcode - Win32 Debug"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 1
@@ -72,8 +73,8 @@ PostBuild_Cmds=xcopy release\Opcode.lib y:\lib /Q /Y	xcopy *.h Y:\inc /Q /Y	del 
 # PROP Intermediate_Dir "Debug"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "OPCODEDISTRIB_EXPORTS" /Yu"stdafx.h" /FD /GZ /c
-# ADD CPP /nologo /G6 /MDd /W3 /Gm /Zi /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "OPCODEDISTRIB_EXPORTS" /FR /Yu"stdafx.h" /FD /GZ /c
+# ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "OPCODE_EXPORTS" /Yu"stdafx.h" /FD /GZ /c
+# ADD CPP /nologo /G6 /MTd /W3 /Gm /Zi /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "OPCODE_EXPORTS" /FR /Yu"stdafx.h" /FD /GZ /QIfist /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x40c /d "_DEBUG"
@@ -83,18 +84,18 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 /nologo /dll /incremental:no /debug /machine:I386 /out:"Debug/Opcode_D.dll" /pdbtype:sept
+# ADD LINK32 /nologo /dll /incremental:no /debug /machine:I386 /out:"Y:\dll\Opcode_D.dll" /pdbtype:sept
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
-PostBuild_Cmds=xcopy debug\Opcode_D.lib y:\lib /Q /Y	xcopy *.h Y:\inc /Q /Y	del Y:\inc\stdafx.h
+PostBuild_Cmds=xcopy debug\Opcode_D.lib y:\lib /Q /Y
 # End Special Build Tool
 
 !ENDIF 
 
 # Begin Target
 
-# Name "OpcodeDistrib - Win32 Release"
-# Name "OpcodeDistrib - Win32 Debug"
+# Name "Opcode - Win32 Release"
+# Name "Opcode - Win32 Debug"
 # Begin Group "API"
 
 # PROP Default_Filter ""
@@ -136,11 +137,35 @@ SOURCE=.\StdAfx.h
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE=.\OPC_AABBCollider.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\OPC_AABBCollider.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\OPC_Collider.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=.\OPC_Collider.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\OPC_OBBCollider.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\OPC_OBBCollider.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\OPC_PlanesCollider.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\OPC_PlanesCollider.h
 # End Source File
 # Begin Source File
 
@@ -165,6 +190,14 @@ SOURCE=.\OPC_TreeCollider.cpp
 # Begin Source File
 
 SOURCE=.\OPC_TreeCollider.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\OPC_VolumeCollider.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\OPC_VolumeCollider.h
 # End Source File
 # End Group
 # Begin Source File
@@ -213,6 +246,14 @@ SOURCE=.\OPC_BoxBoxOverlap.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\OPC_PlanesAABBOverlap.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\OPC_PlanesTriOverlap.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\OPC_RayAABBOverlap.h
 # End Source File
 # Begin Source File
@@ -236,88 +277,96 @@ SOURCE=.\OPC_TriBoxOverlap.h
 SOURCE=.\OPC_TriTriOverlap.h
 # End Source File
 # End Group
-# Begin Group "ICE code"
+# Begin Group "Ice code"
 
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=.\IceAABB.cpp
+SOURCE=.\OPC_AABB.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\IceAABB.h
+SOURCE=.\OPC_AABB.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\IceBoundingSphere.h
+SOURCE=.\OPC_Container.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\IceContainer.cpp
+SOURCE=.\OPC_Container.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\IceContainer.h
+SOURCE=.\OPC_FPU.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\IceFPU.h
+SOURCE=.\OPC_Matrix3x3.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\IceHPoint.h
+SOURCE=.\OPC_Matrix3x3.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\IceMatrix3x3.cpp
+SOURCE=.\OPC_Matrix4x4.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\IceMatrix3x3.h
+SOURCE=.\OPC_Matrix4x4.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\IceMatrix4x4.cpp
+SOURCE=.\OPC_MemoryMacros.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\IceMatrix4x4.h
+SOURCE=.\OPC_OBB.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\IceMemoryMacros.h
+SOURCE=.\OPC_OBB.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\IcePlane.h
+SOURCE=.\OPC_Plane.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\IcePoint.cpp
+SOURCE=.\OPC_Plane.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\IcePoint.h
+SOURCE=.\OPC_Point.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\IceRandom.h
+SOURCE=.\OPC_Point.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\IceRay.h
+SOURCE=.\OPC_Preprocessor.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\IceTriangle.cpp
+SOURCE=.\OPC_Ray.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\IceTriangle.h
+SOURCE=.\OPC_Ray.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\IceTypes.h
+SOURCE=.\OPC_Triangle.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\OPC_Triangle.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\OPC_Types.h
 # End Source File
 # End Group
 # Begin Source File

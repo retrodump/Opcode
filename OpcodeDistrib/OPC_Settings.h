@@ -29,10 +29,12 @@
 	//! Use epsilon value in tri-tri overlap test
 	#define OPC_TRITRI_EPSILON_TEST
 
-	//! Use epsilon value in ray-AABB overlap test
-//	#define OPC_RAYAABB_EPSILON 0.00001f
+	//! Use tree-coherence or not [not implemented yet]
+//	#define OPC_USE_TREE_COHERENCE
 
-	//! Use tree-coherence or not
-	#define OPC_USE_TREE_COHERENCE
+	//! Use callbacks or direct pointers
+//	#define OPC_USE_CALLBACKS
+
+	// NB: no compilation flag to enable/disable stats since they're actually needed in the box/box overlap test
 
 #endif //__OPC_SETTINGS_H__

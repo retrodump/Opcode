@@ -8,8 +8,8 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
- *	Contains base collider class.
- *	\file		OPC_Collider.h
+ *	Contains base volume collider class.
+ *	\file		OPC_VolumeCollider.h
  *	\author		Pierre Terdiman
  *	\date		June, 2, 2001
  */
@@ -17,122 +17,132 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Include Guard
-#ifndef __OPC_COLLIDER_H__
-#define __OPC_COLLIDER_H__
+#ifndef __OPC_VOLUMECOLLIDER_H__
+#define __OPC_VOLUMECOLLIDER_H__
 
-	enum CollisionFlag
+	struct OPCODE_API VolumeCache
 	{
-		OPC_FIRST_CONTACT		= (1<<0),		//!< Report all contacts (false) or only first one (true)
-		OPC_TEMPORAL_COHERENCE	= (1<<1),		//!< Use temporal coherence or not
-		OPC_CONTACT				= (1<<2),		//!< Final contact status after a collision query
-		OPC_TEMPORAL_HIT		= (1<<3),		//!< There has been an early exit due to temporal coherence
+					VolumeCache()
+					{
+					}
 
-		OPC_CONTACT_FOUND		= OPC_FIRST_CONTACT | OPC_CONTACT,
-		OPC_TEMPORAL_CONTACT	= OPC_TEMPORAL_HIT | OPC_CONTACT,
-
-		OPC_FORCE_DWORD			= 0x7fffffff
+		Container	TouchedPrimitives;	//!< Indices of touched primitives
 	};
 
-	class OPCODE_API Collider
+	class OPCODE_API VolumeCollider : public Collider
 	{
 		public:
 		// Constructor / Destructor
-											Collider();
-		virtual								~Collider();
+											VolumeCollider();
+		virtual								~VolumeCollider() = 0;
 
 		// Collision report
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
-		 *	Gets the last collision status after a collision query.
-		 *	\return		true if a collision occured
+		 *	Gets the number of touched primitives after a collision query.
+		 *	\see		GetContactStatus()
+		 *	\see		GetTouchedPrimitives()
+		 *	\return		the number of touched faces
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		inline_				BOOL			GetContactStatus()			const	{ return mFlags & OPC_CONTACT;							}
+		inline_				udword			GetNbTouchedPrimitives()	const	{ return mTouchedPrimitives ? mTouchedPrimitives->GetNbEntries() : 0;	}
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
-		 *	Gets the "first contact" mode.
-		 *	\return		true if "first contact" mode is on
+		 *	Gets the list of touched primitives after a collision query.
+		 *	\see		GetContactStatus()
+		 *	\see		GetNbTouchedPrimitives()
+		 *	\return		the list of touched primitives (primitive indices)
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		inline_				BOOL			FirstContactEnabled()		const	{ return mFlags & OPC_FIRST_CONTACT;					}
+		inline_				udword*			GetTouchedPrimitives()		const	{ return mTouchedPrimitives ? mTouchedPrimitives->GetEntries() : null;	}
+
+		// Stats
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
-		 *	Gets the temporal coherence mode.
-		 *	\return		true if temporal coherence is on
+		 *	Stats: gets the number of Volume-BV overlap tests after a collision query.
+		 *	\see		GetNbVolumePrimTests()
+		 *	\return		the number of Volume-BV tests performed during last query
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		inline_				BOOL			TemporalCoherenceEnabled()	const	{ return mFlags & OPC_TEMPORAL_COHERENCE;				}
+		inline_				udword			GetNbVolumeBVTests()		const	{ return mNbVolumeBVTests;												}
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
-		 *	Checks a first contact has already been found.
-		 *	\return		true if a first contact has been found and we can stop a query
+		 *	Stats: gets the number of Volume-Triangle overlap tests after a collision query.
+		 *	\see		GetNbVolumeBVTests()
+		 *	\return		the number of Volume-Triangle tests performed during last query
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		inline_				BOOL			ContactFound()				const	{ return (mFlags&OPC_CONTACT_FOUND)==OPC_CONTACT_FOUND;	}
-
-		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		/**
-		 *	Checks there's been an early exit due to temporal coherence;
-		 *	\return		true if a temporal hit has occured
-		 */
-		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		inline_				BOOL			TemporalHit()				const	{ return mFlags & OPC_TEMPORAL_HIT;						}
+		inline_				udword			GetNbVolumePrimTests()		const	{ return mNbVolumePrimTests;											}
 
 		// Settings
 
+#ifdef OPC_USE_CALLBACKS
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
-		 *	Reports all contacts (false) or first contact only (true)
-		 *	\param		flag		[in] true for first contact, false for all contacts
-		 *	\see		SetTemporalCoherence(bool flag)
-		 *	\see		ValidateSettings()
+		 *	Callback control: a method to setup object callback. Must provide triangle-vertices for a given triangle index.
+		 *	\param		callback	[in] user-defined callback
+		 *	\param		user_data	[in] user-defined data
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		inline_				void			SetFirstContact(bool flag)
-							{
-								if(flag)	mFlags |= OPC_FIRST_CONTACT;
-								else		mFlags &= ~OPC_FIRST_CONTACT;
-							}
-
+		inline_				void			SetCallback(OPC_CALLBACK callback, udword user_data)	{ mObjCallback = callback;	mUserData = user_data;	}
+#else
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
-		 *	Enable/disable temporal coherence.
-		 *	\param		flag		[in] true to enable temporal coherence, false to discard it
-		 *	\see		SetFirstContact(bool flag)
-		 *	\see		ValidateSettings()
+		 *	Pointers control: a method to setup object pointers. Must provide access to faces and vertices for a given object.
+		 *	\param		faces	[in] pointer to faces
+		 *	\param		verts	[in] pointer to vertices
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		inline_				void			SetTemporalCoherence(bool flag)
-							{
-								if(flag)	mFlags |= OPC_TEMPORAL_COHERENCE;
-								else		mFlags &= ~OPC_TEMPORAL_COHERENCE;
-							}
-
+		inline_				void			SetPointers(const IndexedTriangle* faces, const Point* verts)	{ mFaces = faces;	mVerts = verts;			}
+#endif
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
 		 *	Validates current settings. You should call this method after all the settings / callbacks have been defined for a collider.
 		 *	\return		null if everything is ok, else a string describing the problem
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		virtual				const char*		ValidateSettings()	= 0
-							{
-								return "Collider::ValidateSettings: pure virtual function called!";
-							}
-		protected:
+		override(Collider)	const char*		ValidateSettings();
 
-							udword			mFlags;		//!< Bit flags
+		protected:
+		// Touched primitives
+							Container*		mTouchedPrimitives;	//!< List of touched primitives
+#ifdef OPC_USE_CALLBACKS
+		// User callback
+							udword			mUserData;			//!< User-defined data sent to callback
+							OPC_CALLBACK	mObjCallback;		//!< Object callback
+#else
+		// User pointers
+					const IndexedTriangle*	mFaces;				//!< User-defined faces
+							const Point*	mVerts;				//!< User-defined vertices
+#endif
+		// Dequantization coeffs
+							Point			mCenterCoeff;
+							Point			mExtentsCoeff;
+		// Stats
+							udword			mNbVolumeBVTests;	//!< Number of Volume-BV tests
+							udword			mNbVolumePrimTests;	//!< Number of Volume-Primitive tests
 		// Internal methods
+							void			_Dump(const AABBCollisionNode* node);
+							void			_Dump(const AABBNoLeafNode* node);
+							void			_Dump(const AABBQuantizedNode* node);
+							void			_Dump(const AABBQuantizedNoLeafNode* node);
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
 		 *	Initializes a query
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		virtual inline_		void			InitQuery()		{ mFlags &= ~OPC_TEMPORAL_CONTACT;	}
+		override(Collider) inline_	void	InitQuery()
+							{
+								// Reset stats & contact status
+								mNbVolumeBVTests	= 0;
+								mNbVolumePrimTests	= 0;
+								Collider::InitQuery();
+							}
 	};
 
-#endif // __OPC_COLLIDER_H__
+#endif // __OPC_VOLUMECOLLIDER_H__

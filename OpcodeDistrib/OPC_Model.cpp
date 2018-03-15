@@ -31,14 +31,15 @@
  *		OPCODE_Model Sample;
  *
  *		OPCODECREATE OPCC;
- *		OPCC.NbTris		= ...;
- *		OPCC.NbVerts	= ...;
- *		OPCC.Tris		= ...;
- *		OPCC.Verts		= ...;
- *		OPCC.Rules		= ...;
- *		OPCC.NoLeaf		= ...;
- *		OPCC.Quantized	= ...;
- *		Sample.Build(OPCC);
+ *		OPCC.NbTris			= ...;
+ *		OPCC.NbVerts		= ...;
+ *		OPCC.Tris			= ...;
+ *		OPCC.Verts			= ...;
+ *		OPCC.Rules			= ...;
+ *		OPCC.NoLeaf			= ...;
+ *		OPCC.Quantized		= ...;
+ *		OPCC.KeepOriginal	= ...;
+ *		bool Status = Sample.Build(OPCC);
  *	\endcode
  *
  *	2) Create a tree collider and setup it:
@@ -58,10 +59,10 @@
  *	Ex:
  *
  *	\code
- *		static void ColCallback(udword triangleindex, VertexPointers& triangle, udword userdata)
+ *		static void ColCallback(udword triangleindex, VertexPointers& triangle, udword user_data)
  *		{
  *			// Get back Mesh0 or Mesh1 (you also can use 2 different callbacks)
- *			Mesh* MyMesh = (Mesh*)userdata;
+ *			Mesh* MyMesh = (Mesh*)user_data;
  *			// Get correct triangle in the app-controlled database
  *			const Triangle* Tri = MyMesh->GetTriangle(triangleindex);
  *			// Setup pointers to vertices for the collision system
@@ -71,16 +72,23 @@
  *		}
  *
  *		// Setup callbacks
- *		TC.SetUserData0(udword(Mesh0));
- *		TC.SetUserData1(udword(Mesh1));
- *		TC.SetCallbackObj0(ColCallback);
- *		TC.SetCallbackObj1(ColCallback);
+ *		TC.SetCallback0(ColCallback, udword(Mesh0));
+ *		TC.SetCallback1(ColCallback, udword(Mesh1));
  *	\endcode
  *
  *	Of course, you should make this callback as fast as possible. And you're also not supposed
  *	to modify the geometry *after* the collision trees have been built. The alternative was to
  *	store the geometry & topology in the collision system as well (as in RAPID) but we have found
  *	this approach to waste a lot of ram in many cases.
+ *
+ *	Since version 1.2 you can also use plain pointers. It's a tiny bit faster, but not as safe.
+ *
+ *	Ex:
+ *
+ *	\code
+ *		TC.SetPointers0(Mesh0->GetFaces(), Mesh0->GetVerts());
+ *		TC.SetPointers1(Mesh1->GetFaces(), Mesh1->GetVerts());
+ *	\endcode
  *
  *	4) Perform a collision query
  *
@@ -94,11 +102,11 @@
  *		bool IsOk = TC.Collide(ColCache, World0, World1);
  *
  *		// Get collision status => if true, objects overlap
- *		bool Status = TC.GetContactStatus();
+ *		BOOL Status = TC.GetContactStatus();
  *
  *		// Number of colliding pairs and list of pairs
  *		udword NbPairs = TC.GetNbPairs();
- *		Pair* p = TC.GetPairs()
+ *		const Pair* p = TC.GetPairs()
  *	\endcode
  *
  *	5) Stats
@@ -112,7 +120,7 @@
  *
  *	\class		OPCODE_Model
  *	\author		Pierre Terdiman
- *	\version	1.0
+ *	\version	1.2
  *	\date		March, 20, 2001
 */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -122,6 +130,21 @@
 #include "Stdafx.h"
 
 using namespace Opcode;
+
+OPCODECREATE::OPCODECREATE()
+{
+	NbTris			= 0;
+	NbVerts			= 0;
+	Tris			= null;
+	Verts			= null;
+	Rules			= SPLIT_COMPLETE | SPLIT_LARGESTAXIS;
+	NoLeaf			= true;
+	Quantized		= true;
+#ifdef __MESHMERIZER_H__
+	CollisionHull	= false;
+#endif // __MESHMERIZER_H__
+	KeepOriginal	= false;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
@@ -167,7 +190,7 @@ bool OPCODE_Model::Build(const OPCODECREATE& create)
 	// Check topology. If the model contains degenerate faces, collision report can be wrong in some cases.
 	// e.g. it happens with the standard MAX teapot. So clean your meshes first... If you don't have a mesh cleaner
 	// you can try this: www.codercorner.com/Consolidation.zip
-	const Triangle* Tris = (const Triangle*)create.Tris;
+	const IndexedTriangle* Tris = (const IndexedTriangle*)create.Tris;
 	udword NbDegenerate = 0;
 	for(udword i=0;i<create.NbTris;i++)
 	{

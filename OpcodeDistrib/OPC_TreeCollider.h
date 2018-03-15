@@ -24,8 +24,8 @@
 	{
 		public:
 		// Constructor / Destructor
-												AABBTreeCollider();
-		virtual									~AABBTreeCollider();
+											AABBTreeCollider();
+		virtual								~AABBTreeCollider();
 		// Generic collision query
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -36,198 +36,204 @@
 		 *	- GetPairs()
 		 *
 		 *	\param		cache			[in] collision cache for model pointers and a colliding pair of primitives
-		 *	\param		world0			[in] world matrix for first object
-		 *	\param		world1			[in] world matrix for second object
+		 *	\param		world0			[in] world matrix for first object, or null
+		 *	\param		world1			[in] world matrix for second object, or null
 		 *	\return		true if success
 		 *	\warning	SCALE NOT SUPPORTED. The matrices must contain rotation & translation parts only.
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-							bool				Collide(BVTCache& cache, const Matrix4x4& world0, const Matrix4x4& world1);
+							bool			Collide(BVTCache& cache, const Matrix4x4* world0=null, const Matrix4x4* world1=null);
 
 		// Collision queries
-							bool				Collide(const AABBCollisionTree* tree0, const AABBCollisionTree* tree1, const Matrix4x4& world0, const Matrix4x4& world1, Pair* cache=null);
-							bool				Collide(const AABBNoLeafTree* tree0, const AABBNoLeafTree* tree1, const Matrix4x4& world0, const Matrix4x4& world1, Pair* cache=null);
-							bool				Collide(const AABBQuantizedTree* tree0, const AABBQuantizedTree* tree1, const Matrix4x4& world0, const Matrix4x4& world1, Pair* cache=null);
-							bool				Collide(const AABBQuantizedNoLeafTree* tree0, const AABBQuantizedNoLeafTree* tree1, const Matrix4x4& world0, const Matrix4x4& world1, Pair* cache=null);
-
+							bool			Collide(const AABBCollisionTree* tree0, const AABBCollisionTree* tree1,				const Matrix4x4* world0=null, const Matrix4x4* world1=null, Pair* cache=null);
+							bool			Collide(const AABBNoLeafTree* tree0, const AABBNoLeafTree* tree1,					const Matrix4x4* world0=null, const Matrix4x4* world1=null, Pair* cache=null);
+							bool			Collide(const AABBQuantizedTree* tree0, const AABBQuantizedTree* tree1,				const Matrix4x4* world0=null, const Matrix4x4* world1=null, Pair* cache=null);
+							bool			Collide(const AABBQuantizedNoLeafTree* tree0, const AABBQuantizedNoLeafTree* tree1,	const Matrix4x4* world0=null, const Matrix4x4* world1=null, Pair* cache=null);
 		// Settings
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
-		 *	Settings: select between full box-box tests or "SAT-lite" tests (where Class III axes are discarded)
+		 *	Settings: selects between full box-box tests or "SAT-lite" tests (where Class III axes are discarded)
 		 *	\param		flag		[in] true for full tests, false for coarse tests
 		 *	\see		SetFullPrimBoxTest(bool flag)
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline		void				SetFullBoxBoxTest(bool flag)			{ mFullBoxBoxTest		= flag;					}
+		inline_				void			SetFullBoxBoxTest(bool flag)			{ mFullBoxBoxTest		= flag;					}
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
-		 *	Settings: select between full triangle-box tests or "SAT-lite" tests (where Class III axes are discarded)
+		 *	Settings: selects between full triangle-box tests or "SAT-lite" tests (where Class III axes are discarded)
 		 *	\param		flag		[in] true for full tests, false for coarse tests
 		 *	\see		SetFullBoxBoxTest(bool flag)
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline		void				SetFullPrimBoxTest(bool flag)			{ mFullPrimBoxTest		= flag;					}
+		inline_				void			SetFullPrimBoxTest(bool flag)			{ mFullPrimBoxTest		= flag;					}
 
 		// Stats
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
-		 *	Stats: a method to get the number of BV-BV overlap tests after a collision query.
+		 *	Stats: gets the number of BV-BV overlap tests after a collision query.
 		 *	\see		GetNbPrimPrimTests()
 		 *	\see		GetNbBVPrimTests()
 		 *	\return		the number of BV-BV tests performed during last query
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline		udword				GetNbBVBVTests()				const	{ return mNbBVBVTests;							}
+		inline_				udword			GetNbBVBVTests()				const	{ return mNbBVBVTests;							}
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
-		 *	Stats: a method to get the number of Triangle-Triangle overlap tests after a collision query.
+		 *	Stats: gets the number of Triangle-Triangle overlap tests after a collision query.
 		 *	\see		GetNbBVBVTests()
 		 *	\see		GetNbBVPrimTests()
 		 *	\return		the number of Triangle-Triangle tests performed during last query
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline		udword				GetNbPrimPrimTests()			const	{ return mNbPrimPrimTests;						}
+		inline_				udword			GetNbPrimPrimTests()			const	{ return mNbPrimPrimTests;						}
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
-		 *	Stats: a method to get the number of BV-Triangle overlap tests after a collision query.
+		 *	Stats: gets the number of BV-Triangle overlap tests after a collision query.
 		 *	\see		GetNbBVBVTests()
 		 *	\see		GetNbPrimPrimTests()
 		 *	\return		the number of BV-Triangle tests performed during last query
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline		udword				GetNbBVPrimTests()				const	{ return mNbBVPrimTests;						}
+		inline_				udword			GetNbBVPrimTests()				const	{ return mNbBVPrimTests;						}
 
 		// Data access
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
-		 *	A method to get the number of contacts after a collision query.
+		 *	Gets the number of contacts after a collision query.
 		 *	\see		GetContactStatus()
 		 *	\see		GetPairs()
 		 *	\return		the number of contacts / colliding pairs.
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline		udword				GetNbPairs()					const	{ return mPairs.GetNbEntries()>>1;				}
+		inline_				udword			GetNbPairs()					const	{ return mPairs.GetNbEntries()>>1;				}
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
-		 *	A method to get the pairs of colliding triangles after a collision query.
+		 *	Gets the pairs of colliding triangles after a collision query.
 		 *	\see		GetContactStatus()
 		 *	\see		GetNbPairs()
 		 *	\return		the list of colliding pairs (triangle indices)
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline		Pair*				GetPairs()						const	{ return (Pair*)mPairs.GetEntries();			}
+		inline_				const Pair*		GetPairs()						const	{ return (const Pair*)mPairs.GetEntries();		}
 
-		// Callback control
-
-		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		/**
-		 *	Callback control: a method to setup user-data assigned to callback 0.
-		 *	\param		data		[in] user-defined data
-		 *	\see		SetUserData1(udword data)
-		 *	\return		Self-Reference
-		 */
-		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline		AABBTreeCollider&	SetUserData0(udword data)				{ mUserData0	= data;			return *this;	}
-
-		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		/**
-		 *	Callback control: a method to setup user-data assigned to callback 1.
-		 *	\param		data		[in] user-defined data
-		 *	\see		SetUserData0(udword data)
-		 *	\return		Self-Reference
-		 */
-		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline		AABBTreeCollider&	SetUserData1(udword data)				{ mUserData1	= data;			return *this;	}
-
+#ifdef OPC_USE_CALLBACKS
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
 		 *	Callback control: a method to setup callback 0. Must provide triangle-vertices for a given triangle index.
 		 *	\param		callback	[in] user-defined callback
-		 *	\see		SetCallbackObj1(OPC_CALLBACK callback)
-		 *	\return		Self-Reference
+		 *	\param		data		[in] user-defined data
+		 *	\see		SetCallback1(OPC_CALLBACK callback, udword data)
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline		AABBTreeCollider&	SetCallbackObj0(OPC_CALLBACK callback)	{ mObj0Callback	= callback;		return *this;	}
+		inline_				void			SetCallback0(OPC_CALLBACK callback, udword data)	{ mObjCallback0	= callback;	mUserData0	= data;		}
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
 		 *	Callback control: a method to setup callback 1. Must provide triangle-vertices for a given triangle index.
 		 *	\param		callback	[in] user-defined callback
-		 *	\see		SetCallbackObj0(OPC_CALLBACK callback)
-		 *	\return		Self-Reference
+		 *	\param		data		[in] user-defined data
+		 *	\see		SetCallback0(OPC_CALLBACK callback, udword data)
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline		AABBTreeCollider&	SetCallbackObj1(OPC_CALLBACK callback)	{ mObj1Callback	= callback;		return *this;	}
+		inline_				void			SetCallback1(OPC_CALLBACK callback, udword data)	{ mObjCallback1	= callback;	mUserData1	= data;		}
+#else
+		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		/**
+		 *	Pointers control: a method to setup object0 pointers. Must provide access to faces and vertices for a given object.
+		 *	\param		faces	[in] pointer to faces
+		 *	\param		verts	[in] pointer to vertices
+		 *	\see		SetPointers1(const Triangle* faces, const Point* verts)
+		 */
+		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		inline_				void			SetPointers0(const IndexedTriangle* faces, const Point* verts)	{ mFaces0 = faces;	mVerts0 = verts;	}
 
+		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		/**
+		 *	Pointers control: a method to setup object1 pointers. Must provide access to faces and vertices for a given object.
+		 *	\param		faces	[in] pointer to faces
+		 *	\param		verts	[in] pointer to vertices
+		 *	\see		SetPointers0(const Triangle* faces, const Point* verts)
+		 */
+		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		inline_				void			SetPointers1(const IndexedTriangle* faces, const Point* verts)	{ mFaces1 = faces;	mVerts1 = verts;	}
+#endif
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/**
 		 *	Validates current settings. You should call this method after all the settings and callbacks have been defined for a collider.
 		 *	\return		null if everything is ok, else a string describing the problem
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		override(Collider)	const char*			ValidateSettings();
+		override(Collider)	const char*		ValidateSettings();
 
-		private:
+		protected:
 		// Colliding pairs
-							Container			mPairs;				//!< Pairs of colliding primitives
+							Container		mPairs;				//!< Pairs of colliding primitives
+#ifdef OPC_USE_CALLBACKS
 		// User callback
-							udword				mUserData0;			//!< User-defined data sent to callbacks
-							udword				mUserData1;			//!< User-defined data sent to callbacks
-							OPC_CALLBACK		mObj0Callback;		//!< Callback for object 0
-							OPC_CALLBACK		mObj1Callback;		//!< Callback for object 1
+							udword			mUserData0;			//!< User-defined data sent to callbacks
+							udword			mUserData1;			//!< User-defined data sent to callbacks
+							OPC_CALLBACK	mObjCallback0;		//!< Callback for object 0
+							OPC_CALLBACK	mObjCallback1;		//!< Callback for object 1
+#else
+		// User pointers
+					const IndexedTriangle*	mFaces0;			//!< User-defined faces
+					const IndexedTriangle*	mFaces1;			//!< User-defined faces
+							const Point*	mVerts0;			//!< User-defined vertices
+							const Point*	mVerts1;			//!< User-defined vertices
+#endif
 		// Stats
-							udword				mNbBVBVTests;		//!< Number of BV-BV tests
-							udword				mNbPrimPrimTests;	//!< Number of Primitive-Primitive tests
-							udword				mNbBVPrimTests;		//!< Number of BV-Primitive tests
+							udword			mNbBVBVTests;		//!< Number of BV-BV tests
+							udword			mNbPrimPrimTests;	//!< Number of Primitive-Primitive tests
+							udword			mNbBVPrimTests;		//!< Number of BV-Primitive tests
 		// Precomputed data
-							Matrix3x3			mAR;				//!< Absolute rotation matrix
-							Matrix3x3			mR0to1;				//!< Rotation from object0 to object1
-							Matrix3x3			mR1to0;				//!< Rotation from object1 to object0
-							Point				mT0to1;				//!< Translation from object0 to object1
-							Point				mT1to0;				//!< Translation from object1 to object0
+							Matrix3x3		mAR;				//!< Absolute rotation matrix
+							Matrix3x3		mR0to1;				//!< Rotation from object0 to object1
+							Matrix3x3		mR1to0;				//!< Rotation from object1 to object0
+							Point			mT0to1;				//!< Translation from object0 to object1
+							Point			mT1to0;				//!< Translation from object1 to object0
 		// Dequantization coeffs
-							Point				mCenterCoeff0;
-							Point				mExtentsCoeff0;
-							Point				mCenterCoeff1;
-							Point				mExtentsCoeff1;
+							Point			mCenterCoeff0;
+							Point			mExtentsCoeff0;
+							Point			mCenterCoeff1;
+							Point			mExtentsCoeff1;
 		// Leaf description
-							Point				mLeafVerts[3];		//!< Triangle vertices
-							udword				mLeafIndex;			//!< Triangle index
+							Point			mLeafVerts[3];		//!< Triangle vertices
+							udword			mLeafIndex;			//!< Triangle index
 		// Settings
-							bool				mFullBoxBoxTest;	//!< Perform full BV-BV tests (true) or SAT-lite tests (false)
-							bool				mFullPrimBoxTest;	//!< Perform full Primitive-BV tests (true) or SAT-lite tests (false)
+							bool			mFullBoxBoxTest;	//!< Perform full BV-BV tests (true) or SAT-lite tests (false)
+							bool			mFullPrimBoxTest;	//!< Perform full Primitive-BV tests (true) or SAT-lite tests (false)
 		// Internal methods
 
 			// Standard AABB trees
-							void				_Collide(const AABBCollisionNode* b0, const AABBCollisionNode* b1);
+							void			_Collide(const AABBCollisionNode* b0, const AABBCollisionNode* b1);
 			// Quantized AABB trees
-							void				_Collide(const AABBQuantizedNode* b0, const AABBQuantizedNode* b1, const Point& a, const Point& Pa, const Point& b, const Point& Pb);
+							void			_Collide(const AABBQuantizedNode* b0, const AABBQuantizedNode* b1, const Point& a, const Point& Pa, const Point& b, const Point& Pb);
 			// No-leaf AABB trees
-							void				_CollideTriBox(const AABBNoLeafNode* b);
-							void				_CollideBoxTri(const AABBNoLeafNode* b);
-							void				_Collide(const AABBNoLeafNode* a, const AABBNoLeafNode* b);
+							void			_CollideTriBox(const AABBNoLeafNode* b);
+							void			_CollideBoxTri(const AABBNoLeafNode* b);
+							void			_Collide(const AABBNoLeafNode* a, const AABBNoLeafNode* b);
 			// Quantized no-leaf AABB trees
-							void				_CollideTriBox(const AABBQuantizedNoLeafNode* b);
-							void				_CollideBoxTri(const AABBQuantizedNoLeafNode* b);
-							void				_Collide(const AABBQuantizedNoLeafNode* a, const AABBQuantizedNoLeafNode* b);
+							void			_CollideTriBox(const AABBQuantizedNoLeafNode* b);
+							void			_CollideBoxTri(const AABBQuantizedNoLeafNode* b);
+							void			_Collide(const AABBQuantizedNoLeafNode* a, const AABBQuantizedNoLeafNode* b);
 			// Overlap tests
-							void				PrimTest(udword id0, udword id1);
-							void				PrimTestTriIndex(udword id1);
-							void				PrimTestIndexTri(udword id0);
+							void			PrimTest(udword id0, udword id1);
+			inline_			void			PrimTestTriIndex(udword id1);
+			inline_			void			PrimTestIndexTri(udword id0);
 
-							bool				BoxBoxOverlap(const Point& a, const Point& Pa, const Point& b, const Point& Pb);
-							bool				TriBoxOverlap(const Point& center, const Point& extents);
-							bool				TriTriOverlap(const Point& V0, const Point& V1, const Point& V2, const Point& U0, const Point& U1, const Point& U2);
+			inline_			BOOL			BoxBoxOverlap(const Point& ea, const Point& ca, const Point& eb, const Point& cb);
+			inline_			BOOL			TriBoxOverlap(const Point& center, const Point& extents);
+			inline_			BOOL			TriTriOverlap(const Point& V0, const Point& V1, const Point& V2, const Point& U0, const Point& U1, const Point& U2);
 			// Init methods
-							void				InitQuery(const Matrix4x4& world0, const Matrix4x4& world1);
-							bool				CheckTemporalCoherence(Pair* cache);
+							void			InitQuery(const Matrix4x4* world0=null, const Matrix4x4* world1=null);
+							bool			CheckTemporalCoherence(Pair* cache);
 	};
 
 #endif // __OPC_TREECOLLIDER_H__

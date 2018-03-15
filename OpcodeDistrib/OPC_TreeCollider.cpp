@@ -22,7 +22,7 @@
  *
  *	\class		AABBTreeCollider
  *	\author		Pierre Terdiman
- *	\version	1.0
+ *	\version	1.2
  *	\date		March, 20, 2001
 */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -33,14 +33,6 @@
 
 using namespace Opcode;
 
-//! Quickly rotates & translates a vector
-__forceinline void TransformPoint(Point& dest, const Point* source, const Matrix3x3& rot, const Point& trans)
-{
-	dest.x = trans.x + source->x * rot.m[0][0] + source->y * rot.m[1][0] + source->z * rot.m[2][0];
-	dest.y = trans.y + source->x * rot.m[0][1] + source->y * rot.m[1][1] + source->z * rot.m[2][1];
-	dest.z = trans.z + source->x * rot.m[0][2] + source->y * rot.m[1][2] + source->z * rot.m[2][2];
-}
-
 #include "OPC_BoxBoxOverlap.h"
 #include "OPC_TriBoxOverlap.h"
 #include "OPC_TriTriOverlap.h"
@@ -50,16 +42,23 @@ __forceinline void TransformPoint(Point& dest, const Point* source, const Matrix
  *	Constructor.
  */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-AABBTreeCollider::AABBTreeCollider()
- :	mNbBVBVTests		(0),
+AABBTreeCollider::AABBTreeCollider() :
+	mNbBVBVTests		(0),
 	mNbPrimPrimTests	(0),
 	mNbBVPrimTests		(0),
 	mFullBoxBoxTest		(true),
 	mFullPrimBoxTest	(true),
+#ifdef OPC_USE_CALLBACKS
 	mUserData0			(0),
 	mUserData1			(0),
-	mObj0Callback		(null),
-	mObj1Callback		(null)
+	mObjCallback0		(null),
+	mObjCallback1		(null)
+#else
+	mFaces0				(null),
+	mFaces1				(null),
+	mVerts0				(null),
+	mVerts1				(null)
+#endif
 {
 }
 
@@ -80,9 +79,14 @@ AABBTreeCollider::~AABBTreeCollider()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const char* AABBTreeCollider::ValidateSettings()
 {
-	if(!mObj0Callback)							return "Callback for object 0 must be defined! Call: SetCallbackObj0().";
-	if(!mObj1Callback)							return "Callback for object 1 must be defined! Call: SetCallbackObj1().";
-	if(mTemporalCoherence && !mFirstContact)	return "Temporal coherence only works with ""First contact"" mode!";
+#ifdef OPC_USE_CALLBACKS
+	if(!mObjCallback0)											return "Callback for object 0 must be defined! Call: SetCallback0().";
+	if(!mObjCallback1)											return "Callback for object 1 must be defined! Call: SetCallback1().";
+#else
+	if(!mFaces0 || !mVerts0)									return "Object0 pointers must be defined! Call: SetPointers0().";
+	if(!mFaces1 || !mVerts1)									return "Object1 pointers must be defined! Call: SetPointers1().";
+#endif
+	if(TemporalCoherenceEnabled() && !FirstContactEnabled())	return "Temporal coherence only works with ""First contact"" mode!";
 	return null;
 }
 
@@ -100,7 +104,7 @@ const char* AABBTreeCollider::ValidateSettings()
  *	\warning	SCALE NOT SUPPORTED. The matrices must contain rotation & translation parts only.
  */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-bool AABBTreeCollider::Collide(BVTCache& cache, const Matrix4x4& world0, const Matrix4x4& world1)
+bool AABBTreeCollider::Collide(BVTCache& cache, const Matrix4x4* world0, const Matrix4x4* world1)
 {
 	// Checkings
 	if(!cache.Model0 || !cache.Model1)								return false;
@@ -125,11 +129,11 @@ bool AABBTreeCollider::Collide(BVTCache& cache, const Matrix4x4& world0, const M
 		{
 			struct Local
 			{
-				static Point* SVCallback(const Point& sv, udword& previndex, udword userdata)
+				static Point* SVCallback(const Point& sv, udword& previndex, udword user_data)
 				{
-					CollisionHull* Hull = (CollisionHull*)userdata;
+					CollisionHull* Hull = (CollisionHull*)user_data;
 					previndex = Hull->ComputeSupportingVertex(sv, previndex);
-					return &Hull->GetVerts()[previndex];
+					return (Point*)&Hull->GetVerts()[previndex];
 				}
 			};
 
@@ -150,7 +154,7 @@ bool AABBTreeCollider::Collide(BVTCache& cache, const Matrix4x4& world0, const M
 				GJK.SetCallbackObj1(Local::SVCallback);
 				GJK.SetUserData0(udword(cache.Model0->GetHull()));
 				GJK.SetUserData1(udword(cache.Model1->GetHull()));
-				Collide = GJK.Collide(world0, world1, &cache.SepVector);
+				Collide = GJK.Collide(*world0, *world1, &cache.SepVector);
 			}
 			else
 			{
@@ -159,13 +163,13 @@ bool AABBTreeCollider::Collide(BVTCache& cache, const Matrix4x4& world0, const M
 				SVE.SetCallbackObj1(Local::SVCallback);
 				SVE.SetUserData0(udword(cache.Model0->GetHull()));
 				SVE.SetUserData1(udword(cache.Model1->GetHull()));
-				Collide = SVE.Collide(world0, world1, &cache.SepVector);
+				Collide = SVE.Collide(*world0, *world1, &cache.SepVector);
 			}
 
 			if(!Collide)
 			{
 		// Reset stats & contact status
-		mContact			= false;
+		mFlags &= ~OPC_CONTACT;
 		mNbBVBVTests		= 0;
 		mNbPrimPrimTests	= 0;
 		mNbBVPrimTests		= 0;
@@ -232,7 +236,7 @@ bool AABBTreeCollider::Collide(BVTCache& cache, const Matrix4x4& world0, const M
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
- *	A method to initialize a collision query :
+ *	Initializes a collision query :
  *	- reset stats & contact status
  *	- setup matrices
  *
@@ -241,10 +245,10 @@ bool AABBTreeCollider::Collide(BVTCache& cache, const Matrix4x4& world0, const M
  *	\warning	SCALE NOT SUPPORTED. The matrices must contain rotation & translation parts only.
  */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void AABBTreeCollider::InitQuery(const Matrix4x4& world0, const Matrix4x4& world1)
+void AABBTreeCollider::InitQuery(const Matrix4x4* world0, const Matrix4x4* world1)
 {
 	// Reset stats & contact status
-	mContact			= false;
+	Collider::InitQuery();
 	mNbBVBVTests		= 0;
 	mNbPrimPrimTests	= 0;
 	mNbBVPrimTests		= 0;
@@ -252,11 +256,14 @@ void AABBTreeCollider::InitQuery(const Matrix4x4& world0, const Matrix4x4& world
 
 	// Setup matrices
 	Matrix4x4 InvWorld0, InvWorld1;
-	InvertPRMatrix(InvWorld0, world0);
-	InvertPRMatrix(InvWorld1, world1);
+	if(world0)	InvertPRMatrix(InvWorld0, *world0);
+	else		InvWorld0.Identity();
 
-	Matrix4x4 World0to1 = world0 * InvWorld1;
-	Matrix4x4 World1to0 = world1 * InvWorld0;
+	if(world1)	InvertPRMatrix(InvWorld1, *world1);
+	else		InvWorld1.Identity();
+
+	Matrix4x4 World0to1 = world0 ? (*world0 * InvWorld1) : InvWorld1;
+	Matrix4x4 World1to0 = world1 ? (*world1 * InvWorld0) : InvWorld0;
 
 	mR0to1 = World0to1;		World0to1.GetTrans(mT0to1);
 	mR1to0 = World1to0;		World1to0.GetTrans(mT1to0);
@@ -285,16 +292,16 @@ bool AABBTreeCollider::CheckTemporalCoherence(Pair* cache)
 	if(!cache)	return false;
 
 	// Test previously colliding primitives first
-	if(mTemporalCoherence && mFirstContact)
+	if(TemporalCoherenceEnabled() && FirstContactEnabled())
 	{
 		PrimTest(cache->id0, cache->id1);
-		if(mContact)	return true;
+		if(GetContactStatus())	return true;
 	}
 	return false;
 }
 
 #define UPDATE_CACHE						\
-	if(cache && mContact)					\
+	if(cache && GetContactStatus())			\
 	{										\
 		cache->id0 = mPairs.GetEntry(0);	\
 		cache->id1 = mPairs.GetEntry(1);	\
@@ -312,11 +319,16 @@ bool AABBTreeCollider::CheckTemporalCoherence(Pair* cache)
  *	\warning	SCALE NOT SUPPORTED. The matrices must contain rotation & translation parts only.
  */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-bool AABBTreeCollider::Collide(const AABBCollisionTree* tree0, const AABBCollisionTree* tree1, const Matrix4x4& world0, const Matrix4x4& world1, Pair* cache)
+bool AABBTreeCollider::Collide(const AABBCollisionTree* tree0, const AABBCollisionTree* tree1, const Matrix4x4* world0, const Matrix4x4* world1, Pair* cache)
 {
 	// Checkings
 	if(!tree0 || !tree1)					return false;
-	if(!mObj0Callback || !mObj1Callback)	return false;
+#ifdef OPC_USE_CALLBACKS
+	if(!mObjCallback0 || !mObjCallback1)	return false;
+#else
+	if(!mFaces0 || !mVerts0)				return false;
+	if(!mFaces1 || !mVerts1)				return false;
+#endif
 
 	// Init collision query
 	InitQuery(world0, world1);
@@ -344,11 +356,16 @@ bool AABBTreeCollider::Collide(const AABBCollisionTree* tree0, const AABBCollisi
  *	\warning	SCALE NOT SUPPORTED. The matrices must contain rotation & translation parts only.
  */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-bool AABBTreeCollider::Collide(const AABBNoLeafTree* tree0, const AABBNoLeafTree* tree1, const Matrix4x4& world0, const Matrix4x4& world1, Pair* cache)
+bool AABBTreeCollider::Collide(const AABBNoLeafTree* tree0, const AABBNoLeafTree* tree1, const Matrix4x4* world0, const Matrix4x4* world1, Pair* cache)
 {
 	// Checkings
 	if(!tree0 || !tree1)					return false;
-	if(!mObj0Callback || !mObj1Callback)	return false;
+#ifdef OPC_USE_CALLBACKS
+	if(!mObjCallback0 || !mObjCallback1)	return false;
+#else
+	if(!mFaces0 || !mVerts0)				return false;
+	if(!mFaces1 || !mVerts1)				return false;
+#endif
 
 	// Init collision query
 	InitQuery(world0, world1);
@@ -376,11 +393,16 @@ bool AABBTreeCollider::Collide(const AABBNoLeafTree* tree0, const AABBNoLeafTree
  *	\warning	SCALE NOT SUPPORTED. The matrices must contain rotation & translation parts only.
  */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-bool AABBTreeCollider::Collide(const AABBQuantizedTree* tree0, const AABBQuantizedTree* tree1, const Matrix4x4& world0, const Matrix4x4& world1, Pair* cache)
+bool AABBTreeCollider::Collide(const AABBQuantizedTree* tree0, const AABBQuantizedTree* tree1, const Matrix4x4* world0, const Matrix4x4* world1, Pair* cache)
 {
 	// Checkings
 	if(!tree0 || !tree1)					return false;
-	if(!mObj0Callback || !mObj1Callback)	return false;
+#ifdef OPC_USE_CALLBACKS
+	if(!mObjCallback0 || !mObjCallback1)	return false;
+#else
+	if(!mFaces0 || !mVerts0)				return false;
+	if(!mFaces1 || !mVerts1)				return false;
+#endif
 
 	// Init collision query
 	InitQuery(world0, world1);
@@ -423,11 +445,16 @@ bool AABBTreeCollider::Collide(const AABBQuantizedTree* tree0, const AABBQuantiz
  *	\warning	SCALE NOT SUPPORTED. The matrices must contain rotation & translation parts only.
  */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-bool AABBTreeCollider::Collide(const AABBQuantizedNoLeafTree* tree0, const AABBQuantizedNoLeafTree* tree1, const Matrix4x4& world0, const Matrix4x4& world1, Pair* cache)
+bool AABBTreeCollider::Collide(const AABBQuantizedNoLeafTree* tree0, const AABBQuantizedNoLeafTree* tree1, const Matrix4x4* world0, const Matrix4x4* world1, Pair* cache)
 {
 	// Checkings
 	if(!tree0 || !tree1)					return false;
-	if(!mObj0Callback || !mObj1Callback)	return false;
+#ifdef OPC_USE_CALLBACKS
+	if(!mObjCallback0 || !mObjCallback1)	return false;
+#else
+	if(!mFaces0 || !mVerts0)				return false;
+	if(!mFaces1 || !mVerts1)				return false;
+#endif
 
 	// Init collision query
 	InitQuery(world0, world1);
@@ -475,18 +502,17 @@ void AABBTreeCollider::_Collide(const AABBCollisionNode* b0, const AABBCollision
 	if(b1->IsLeaf() || (!b0->IsLeaf() && (b0->GetSize() > b1->GetSize())))
 	{
 		_Collide(b0->GetNeg(), b1);
-		if(mFirstContact && mContact) return;
+		if(ContactFound()) return;
 		_Collide(b0->GetPos(), b1);
 	}
 	else
 	{
 		_Collide(b0, b1->GetNeg());
-		if(mFirstContact && mContact) return;
+		if(ContactFound()) return;
 		_Collide(b0, b1->GetPos());
 	}
 }
 #endif
-
 
 #ifdef ALTERNATIVE_CODE
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -500,7 +526,10 @@ void AABBTreeCollider::_Collide(const AABBCollisionNode* b0, const AABBCollision
 void AABBTreeCollider::_Collide(const AABBCollisionNode* b0, const AABBCollisionNode* b1)
 {
 	// Perform BV-BV overlap test
-	if(!BoxBoxOverlap(b0->mAABB.mExtents, b0->mAABB.mCenter, b1->mAABB.mExtents, b1->mAABB.mCenter))	return;
+	if(!BoxBoxOverlap(b0->mAABB.mExtents, b0->mAABB.mCenter, b1->mAABB.mExtents, b1->mAABB.mCenter))
+	{
+		return;
+	}
 
 	if(b0->IsLeaf())
 	{
@@ -511,24 +540,24 @@ void AABBTreeCollider::_Collide(const AABBCollisionNode* b0, const AABBCollision
 		else
 		{
 			_Collide(b0, b1->GetNeg());
-			if(mFirstContact && mContact) return;
+			if(ContactFound()) return;
 			_Collide(b0, b1->GetPos());
 		}
 	}
 	else if(b1->IsLeaf())
 	{
 		_Collide(b0->GetNeg(), b1);
-		if(mFirstContact && mContact) return;
+		if(ContactFound()) return;
 		_Collide(b0->GetPos(), b1);
 	}
 	else
 	{
 		_Collide(b0->GetNeg(), b1->GetNeg());
-		if(mFirstContact && mContact) return;
+		if(ContactFound()) return;
 		_Collide(b0->GetNeg(), b1->GetPos());
-		if(mFirstContact && mContact) return;
+		if(ContactFound()) return;
 		_Collide(b0->GetPos(), b1->GetNeg());
-		if(mFirstContact && mContact) return;
+		if(ContactFound()) return;
 		_Collide(b0->GetPos(), b1->GetPos());
 	}
 }
@@ -548,14 +577,27 @@ void AABBTreeCollider::_Collide(const AABBCollisionNode* b0, const AABBCollision
 void AABBTreeCollider::PrimTest(udword id0, udword id1)
 {
 	// Request vertices from the app
-	VertexPointers VP0;	(mObj0Callback)(id0, VP0, mUserData0);
-	VertexPointers VP1;	(mObj1Callback)(id1, VP1, mUserData1);
+	VertexPointers VP0;
+	VertexPointers VP1;
+#ifdef OPC_USE_CALLBACKS
+	(mObjCallback0)(id0, VP0, mUserData0);
+	(mObjCallback1)(id1, VP1, mUserData1);
+#else
+	const IndexedTriangle* Tri0 = &mFaces0[id0];
+	VP0.Vertex[0] = &mVerts0[Tri0->mVRef[0]];
+	VP0.Vertex[1] = &mVerts0[Tri0->mVRef[1]];
+	VP0.Vertex[2] = &mVerts0[Tri0->mVRef[2]];
+	const IndexedTriangle* Tri1 = &mFaces1[id1];
+	VP1.Vertex[0] = &mVerts1[Tri1->mVRef[0]];
+	VP1.Vertex[1] = &mVerts1[Tri1->mVRef[1]];
+	VP1.Vertex[2] = &mVerts1[Tri1->mVRef[2]];
+#endif
 
 	// Transform from space 1 to space 0
 	Point u0,u1,u2;
-	TransformPoint(u0, VP1.Vertex[0], mR1to0, mT1to0);
-	TransformPoint(u1, VP1.Vertex[1], mR1to0, mT1to0);
-	TransformPoint(u2, VP1.Vertex[2], mR1to0, mT1to0);
+	TransformPoint(u0, *VP1.Vertex[0], mR1to0, mT1to0);
+	TransformPoint(u1, *VP1.Vertex[1], mR1to0, mT1to0);
+	TransformPoint(u2, *VP1.Vertex[2], mR1to0, mT1to0);
 
 	// Perform triangle-triangle overlap test
 	if(TriTriOverlap(*VP0.Vertex[0], *VP0.Vertex[1], *VP0.Vertex[2], u0, u1, u2))
@@ -563,7 +605,7 @@ void AABBTreeCollider::PrimTest(udword id0, udword id1)
 		// Keep track of colliding pairs
 		mPairs.Add(id0).Add(id1);
 		// Set contact status
-		mContact = true;
+		mFlags |= OPC_CONTACT;
 	}
 }
 
@@ -573,18 +615,25 @@ void AABBTreeCollider::PrimTest(udword id0, udword id1)
  *	\param		id1		[in] leaf-triangle index from tree B
  */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-__forceinline void AABBTreeCollider::PrimTestTriIndex(udword id1)
+inline_ void AABBTreeCollider::PrimTestTriIndex(udword id1)
 {
 	// Request vertices from the app
-	VertexPointers VP;	(mObj1Callback)(id1, VP, mUserData1);
-
+	VertexPointers VP;
+#ifdef OPC_USE_CALLBACKS
+	(mObjCallback1)(id1, VP, mUserData1);
+#else
+	const IndexedTriangle* Tri1 = &mFaces1[id1];
+	VP.Vertex[0] = &mVerts1[Tri1->mVRef[0]];
+	VP.Vertex[1] = &mVerts1[Tri1->mVRef[1]];
+	VP.Vertex[2] = &mVerts1[Tri1->mVRef[2]];
+#endif
 	// Perform triangle-triangle overlap test
 	if(TriTriOverlap(mLeafVerts[0], mLeafVerts[1], mLeafVerts[2], *VP.Vertex[0], *VP.Vertex[1], *VP.Vertex[2]))
 	{
 		// Keep track of colliding pairs
 		mPairs.Add(mLeafIndex).Add(id1);
 		// Set contact status
-		mContact = true;
+		mFlags |= OPC_CONTACT;
 	}
 }
 
@@ -594,10 +643,18 @@ __forceinline void AABBTreeCollider::PrimTestTriIndex(udword id1)
  *	\param		id0		[in] leaf-triangle index from tree A
  */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-__forceinline void AABBTreeCollider::PrimTestIndexTri(udword id0)
+inline_ void AABBTreeCollider::PrimTestIndexTri(udword id0)
 {
 	// Request vertices from the app
-	VertexPointers VP;	(mObj0Callback)(id0, VP, mUserData0);
+	VertexPointers VP;
+#ifdef OPC_USE_CALLBACKS
+	(mObjCallback0)(id0, VP, mUserData0);
+#else
+	const IndexedTriangle* Tri0 = &mFaces0[id0];
+	VP.Vertex[0] = &mVerts0[Tri0->mVRef[0]];
+	VP.Vertex[1] = &mVerts0[Tri0->mVRef[1]];
+	VP.Vertex[2] = &mVerts0[Tri0->mVRef[2]];
+#endif
 
 	// Perform triangle-triangle overlap test
 	if(TriTriOverlap(mLeafVerts[0], mLeafVerts[1], mLeafVerts[2], *VP.Vertex[0], *VP.Vertex[1], *VP.Vertex[2]))
@@ -605,7 +662,7 @@ __forceinline void AABBTreeCollider::PrimTestIndexTri(udword id0)
 		// Keep track of colliding pairs
 		mPairs.Add(id0).Add(mLeafIndex);
 		// Set contact status
-		mContact = true;
+		mFlags |= OPC_CONTACT;
 	}
 }
 
@@ -624,7 +681,7 @@ void AABBTreeCollider::_CollideTriBox(const AABBNoLeafNode* b)
 	if(b->HasLeaf())	PrimTestTriIndex(b->GetPrimitive());
 	else				_CollideTriBox(b->GetPos());
 
-	if(mFirstContact && mContact) return;
+	if(ContactFound()) return;
 
 	// Keep same triangle, deal with second child
 	if(b->HasLeaf2())	PrimTestTriIndex(b->GetPrimitive2());
@@ -646,7 +703,7 @@ void AABBTreeCollider::_CollideBoxTri(const AABBNoLeafNode* b)
 	if(b->HasLeaf())	PrimTestIndexTri(b->GetPrimitive());
 	else				_CollideBoxTri(b->GetPos());
 
-	if(mFirstContact && mContact) return;
+	if(ContactFound()) return;
 
 	// Keep same triangle, deal with second child
 	if(b->HasLeaf2())	PrimTestIndexTri(b->GetPrimitive2());
@@ -654,14 +711,25 @@ void AABBTreeCollider::_CollideBoxTri(const AABBNoLeafNode* b)
 }
 
 //! Request triangle vertices from the app and transform them
-#define FETCH_LEAF(primindex, callback, userdata, rot, trans)	\
-	mLeafIndex = primindex;										\
-	/* Request vertices from the app */							\
-	VertexPointers VP;	(callback)(primindex, VP, userdata);	\
-	/* Transform them in a common space */						\
-	TransformPoint(mLeafVerts[0], VP.Vertex[0], rot, trans);	\
-	TransformPoint(mLeafVerts[1], VP.Vertex[1], rot, trans);	\
-	TransformPoint(mLeafVerts[2], VP.Vertex[2], rot, trans);
+#ifdef OPC_USE_CALLBACKS
+	#define FETCH_LEAF(primindex, callback, user_data, rot, trans)	\
+		mLeafIndex = primindex;										\
+		/* Request vertices from the app */							\
+		VertexPointers VP;	(callback)(primindex, VP, user_data);	\
+		/* Transform them in a common space */						\
+		TransformPoint(mLeafVerts[0], *VP.Vertex[0], rot, trans);	\
+		TransformPoint(mLeafVerts[1], *VP.Vertex[1], rot, trans);	\
+		TransformPoint(mLeafVerts[2], *VP.Vertex[2], rot, trans);
+#else
+	#define FETCH_LEAF(primindex, faces, verts, rot, trans)				\
+		mLeafIndex = primindex;											\
+		/* Direct access to vertices */									\
+		const IndexedTriangle* T = &faces[primindex];					\
+		/* Transform them in a common space */							\
+		TransformPoint(mLeafVerts[0], verts[T->mVRef[0]], rot, trans);	\
+		TransformPoint(mLeafVerts[1], verts[T->mVRef[1]], rot, trans);	\
+		TransformPoint(mLeafVerts[2], verts[T->mVRef[2]], rot, trans);
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
@@ -681,12 +749,15 @@ void AABBTreeCollider::_Collide(const AABBNoLeafNode* a, const AABBNoLeafNode* b
 
 	if(a->HasLeaf())
 	{
-		FETCH_LEAF(a->GetPrimitive(), mObj0Callback, mUserData0, mR0to1, mT0to1)
-
+#ifdef OPC_USE_CALLBACKS
+		FETCH_LEAF(a->GetPrimitive(), mObjCallback0, mUserData0, mR0to1, mT0to1)
+#else
+		FETCH_LEAF(a->GetPrimitive(), mFaces0, mVerts0, mR0to1, mT0to1)
+#endif
 		if(BHasLeaf)	PrimTestTriIndex(b->GetPrimitive());
 		else			_CollideTriBox(b->GetPos());
 
-		if(mFirstContact && mContact) return;
+		if(ContactFound()) return;
 
 		if(BHasLeaf2)	PrimTestTriIndex(b->GetPrimitive2());
 		else			_CollideTriBox(b->GetNeg());
@@ -695,31 +766,42 @@ void AABBTreeCollider::_Collide(const AABBNoLeafNode* a, const AABBNoLeafNode* b
 	{
 		if(BHasLeaf)
 		{
-			FETCH_LEAF(b->GetPrimitive(), mObj1Callback, mUserData1, mR1to0, mT1to0)
+#ifdef OPC_USE_CALLBACKS
+			FETCH_LEAF(b->GetPrimitive(), mObjCallback1, mUserData1, mR1to0, mT1to0)
+#else
+			FETCH_LEAF(b->GetPrimitive(), mFaces1, mVerts1, mR1to0, mT1to0)
+#endif
 			_CollideBoxTri(a->GetPos());
 		}
 		else _Collide(a->GetPos(), b->GetPos());
 
-		if(mFirstContact && mContact) return;
+		if(ContactFound()) return;
 
 		if(BHasLeaf2)
 		{
-			FETCH_LEAF(b->GetPrimitive2(), mObj1Callback, mUserData1, mR1to0, mT1to0)
+#ifdef OPC_USE_CALLBACKS
+			FETCH_LEAF(b->GetPrimitive2(), mObjCallback1, mUserData1, mR1to0, mT1to0)
+#else
+			FETCH_LEAF(b->GetPrimitive2(), mFaces1, mVerts1, mR1to0, mT1to0)
+#endif
 			_CollideBoxTri(a->GetPos());
 		}
 		else _Collide(a->GetPos(), b->GetNeg());
 	}
 
-	if(mFirstContact && mContact) return;
+	if(ContactFound()) return;
 
 	if(a->HasLeaf2())
 	{
-		FETCH_LEAF(a->GetPrimitive2(), mObj0Callback, mUserData0, mR0to1, mT0to1)
-
+#ifdef OPC_USE_CALLBACKS
+		FETCH_LEAF(a->GetPrimitive2(), mObjCallback0, mUserData0, mR0to1, mT0to1)
+#else
+		FETCH_LEAF(a->GetPrimitive2(), mFaces0, mVerts0, mR0to1, mT0to1)
+#endif
 		if(BHasLeaf)	PrimTestTriIndex(b->GetPrimitive());
 		else			_CollideTriBox(b->GetPos());
 
-		if(mFirstContact && mContact) return;
+		if(ContactFound()) return;
 
 		if(BHasLeaf2)	PrimTestTriIndex(b->GetPrimitive2());
 		else			_CollideTriBox(b->GetNeg());
@@ -729,17 +811,25 @@ void AABBTreeCollider::_Collide(const AABBNoLeafNode* a, const AABBNoLeafNode* b
 		if(BHasLeaf)
 		{
 			// ### That leaf has possibly already been fetched
-			FETCH_LEAF(b->GetPrimitive(), mObj1Callback, mUserData1, mR1to0, mT1to0)
+#ifdef OPC_USE_CALLBACKS
+			FETCH_LEAF(b->GetPrimitive(), mObjCallback1, mUserData1, mR1to0, mT1to0)
+#else
+			FETCH_LEAF(b->GetPrimitive(), mFaces1, mVerts1, mR1to0, mT1to0)
+#endif
 			_CollideBoxTri(a->GetNeg());
 		}
 		else _Collide(a->GetNeg(), b->GetPos());
 
-		if(mFirstContact && mContact) return;
+		if(ContactFound()) return;
 
 		if(BHasLeaf2)
 		{
 			// ### That leaf has possibly already been fetched
-			FETCH_LEAF(b->GetPrimitive2(), mObj1Callback, mUserData1, mR1to0, mT1to0)
+#ifdef OPC_USE_CALLBACKS
+			FETCH_LEAF(b->GetPrimitive2(), mObjCallback1, mUserData1, mR1to0, mT1to0)
+#else
+			FETCH_LEAF(b->GetPrimitive2(), mFaces1, mVerts1, mR1to0, mT1to0)
+#endif
 			_CollideBoxTri(a->GetNeg());
 		}
 		else _Collide(a->GetNeg(), b->GetNeg());
@@ -776,7 +866,7 @@ void AABBTreeCollider::_Collide(const AABBQuantizedNode* b0, const AABBQuantized
 		const Point nega(float(Box->mExtents[0]) * mExtentsCoeff0.x, float(Box->mExtents[1]) * mExtentsCoeff0.y, float(Box->mExtents[2]) * mExtentsCoeff0.z);
 		_Collide(b0->GetNeg(), b1, nega, negPa, b, Pb);
 
-		if(mFirstContact && mContact) return;
+		if(ContactFound()) return;
 
 		// Dequantize box
 		Box = &b0->GetPos()->mAABB;
@@ -792,7 +882,7 @@ void AABBTreeCollider::_Collide(const AABBQuantizedNode* b0, const AABBQuantized
 		const Point negb(float(Box->mExtents[0]) * mExtentsCoeff1.x, float(Box->mExtents[1]) * mExtentsCoeff1.y, float(Box->mExtents[2]) * mExtentsCoeff1.z);
 		_Collide(b0, b1->GetNeg(), a, Pa, negb, negPb);
 
-		if(mFirstContact && mContact) return;
+		if(ContactFound()) return;
 
 		// Dequantize box
 		Box = &b1->GetPos()->mAABB;
@@ -826,7 +916,7 @@ void AABBTreeCollider::_CollideTriBox(const AABBQuantizedNoLeafNode* b)
 	if(b->HasLeaf())	PrimTestTriIndex(b->GetPrimitive());
 	else				_CollideTriBox(b->GetPos());
 
-	if(mFirstContact && mContact) return;
+	if(ContactFound()) return;
 
 	if(b->HasLeaf2())	PrimTestTriIndex(b->GetPrimitive2());
 	else				_CollideTriBox(b->GetNeg());
@@ -852,7 +942,7 @@ void AABBTreeCollider::_CollideBoxTri(const AABBQuantizedNoLeafNode* b)
 	if(b->HasLeaf())	PrimTestIndexTri(b->GetPrimitive());
 	else				_CollideBoxTri(b->GetPos());
 
-	if(mFirstContact && mContact) return;
+	if(ContactFound()) return;
 
 	if(b->HasLeaf2())	PrimTestIndexTri(b->GetPrimitive2());
 	else				_CollideBoxTri(b->GetNeg());
@@ -885,12 +975,15 @@ void AABBTreeCollider::_Collide(const AABBQuantizedNoLeafNode* a, const AABBQuan
 
 	if(a->HasLeaf())
 	{
-		FETCH_LEAF(a->GetPrimitive(), mObj0Callback, mUserData0, mR0to1, mT0to1)
-
+#ifdef OPC_USE_CALLBACKS
+		FETCH_LEAF(a->GetPrimitive(), mObjCallback0, mUserData0, mR0to1, mT0to1)
+#else
+		FETCH_LEAF(a->GetPrimitive(), mFaces0, mVerts0, mR0to1, mT0to1)
+#endif
 		if(BHasLeaf)	PrimTestTriIndex(b->GetPrimitive());
 		else			_CollideTriBox(b->GetPos());
 
-		if(mFirstContact && mContact) return;
+		if(ContactFound()) return;
 
 		if(BHasLeaf2)	PrimTestTriIndex(b->GetPrimitive2());
 		else			_CollideTriBox(b->GetNeg());
@@ -899,31 +992,42 @@ void AABBTreeCollider::_Collide(const AABBQuantizedNoLeafNode* a, const AABBQuan
 	{
 		if(BHasLeaf)
 		{
-			FETCH_LEAF(b->GetPrimitive(), mObj1Callback, mUserData1, mR1to0, mT1to0)
+#ifdef OPC_USE_CALLBACKS
+			FETCH_LEAF(b->GetPrimitive(), mObjCallback1, mUserData1, mR1to0, mT1to0)
+#else
+			FETCH_LEAF(b->GetPrimitive(), mFaces1, mVerts1, mR1to0, mT1to0)
+#endif
 			_CollideBoxTri(a->GetPos());
 		}
 		else _Collide(a->GetPos(), b->GetPos());
 
-		if(mFirstContact && mContact) return;
+		if(ContactFound()) return;
 
 		if(BHasLeaf2)
 		{
-			FETCH_LEAF(b->GetPrimitive2(), mObj1Callback, mUserData1, mR1to0, mT1to0)
+#ifdef OPC_USE_CALLBACKS
+			FETCH_LEAF(b->GetPrimitive2(), mObjCallback1, mUserData1, mR1to0, mT1to0)
+#else
+			FETCH_LEAF(b->GetPrimitive2(), mFaces1, mVerts1, mR1to0, mT1to0)
+#endif
 			_CollideBoxTri(a->GetPos());
 		}
 		else _Collide(a->GetPos(), b->GetNeg());
 	}
 
-	if(mFirstContact && mContact) return;
+	if(ContactFound()) return;
 
 	if(a->HasLeaf2())
 	{
-		FETCH_LEAF(a->GetPrimitive2(), mObj0Callback, mUserData0, mR0to1, mT0to1)
-
+#ifdef OPC_USE_CALLBACKS
+		FETCH_LEAF(a->GetPrimitive2(), mObjCallback0, mUserData0, mR0to1, mT0to1)
+#else
+		FETCH_LEAF(a->GetPrimitive2(), mFaces0, mVerts0, mR0to1, mT0to1)
+#endif
 		if(BHasLeaf)	PrimTestTriIndex(b->GetPrimitive());
 		else			_CollideTriBox(b->GetPos());
 
-		if(mFirstContact && mContact) return;
+		if(ContactFound()) return;
 
 		if(BHasLeaf2)	PrimTestTriIndex(b->GetPrimitive2());
 		else			_CollideTriBox(b->GetNeg());
@@ -933,17 +1037,25 @@ void AABBTreeCollider::_Collide(const AABBQuantizedNoLeafNode* a, const AABBQuan
 		if(BHasLeaf)
 		{
 			// ### That leaf has possibly already been fetched
-			FETCH_LEAF(b->GetPrimitive(), mObj1Callback, mUserData1, mR1to0, mT1to0)
+#ifdef OPC_USE_CALLBACKS
+			FETCH_LEAF(b->GetPrimitive(), mObjCallback1, mUserData1, mR1to0, mT1to0)
+#else
+			FETCH_LEAF(b->GetPrimitive(), mFaces1, mVerts1, mR1to0, mT1to0)
+#endif
 			_CollideBoxTri(a->GetNeg());
 		}
 		else _Collide(a->GetNeg(), b->GetPos());
 
-		if(mFirstContact && mContact) return;
+		if(ContactFound()) return;
 
 		if(BHasLeaf2)
 		{
 			// ### That leaf has possibly already been fetched
-			FETCH_LEAF(b->GetPrimitive2(), mObj1Callback, mUserData1, mR1to0, mT1to0)
+#ifdef OPC_USE_CALLBACKS
+			FETCH_LEAF(b->GetPrimitive2(), mObjCallback1, mUserData1, mR1to0, mT1to0)
+#else
+			FETCH_LEAF(b->GetPrimitive2(), mFaces1, mVerts1, mR1to0, mT1to0)
+#endif
 			_CollideBoxTri(a->GetNeg());
 		}
 		else _Collide(a->GetNeg(), b->GetNeg());

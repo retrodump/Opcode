@@ -29,7 +29,7 @@
 	struct OPCODE_API BVTCache : Pair
 	{
 		//! Constructor
-		__forceinline	BVTCache()
+		inline_			BVTCache()
 						{
 							ResetCache();
 							ResetCountDown();
@@ -49,7 +49,7 @@
 #endif // __MESHMERIZER_H__
 						}
 
-		__forceinline	void ResetCountDown()
+		inline_			void ResetCountDown()
 						{
 #ifdef __MESHMERIZER_H__	// Collision hulls only supported within ICE !
 							CountDown		= 50;

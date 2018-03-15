@@ -24,6 +24,8 @@
 // Precompiled Header
 #include "Stdafx.h"
 
+using namespace IceCore;
+
 // Static members
 #ifdef CONTAINER_STATS
 udword Container::mNbContainers = 0;
@@ -48,7 +50,7 @@ Container::Container() : mMaxNbEntries(0), mCurNbEntries(0), mEntries(null), mGr
  *	Constructor. Also allocates a given number of entries.
  */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Container::Container(udword size, float growthfactor) : mMaxNbEntries(0), mCurNbEntries(0), mEntries(null), mGrowthFactor(growthfactor)
+Container::Container(udword size, float growth_factor) : mMaxNbEntries(0), mCurNbEntries(0), mEntries(null), mGrowthFactor(growth_factor)
 {
 #ifdef CONTAINER_STATS
 	mNbContainers++;
@@ -73,11 +75,12 @@ Container::~Container()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
- *	A method to resize the container.
+ *	Resizes the container.
+ *	\param		needed	[in] assume the container can be added at least "needed" values
  *	\return		true if success.
  */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-bool Container::Resize()
+bool Container::Resize(udword needed)
 {
 #ifdef CONTAINER_STATS
 	// Subtract previous amount of bytes
@@ -86,6 +89,7 @@ bool Container::Resize()
 
 	// Get more entries
 	mMaxNbEntries = mMaxNbEntries ? udword(float(mMaxNbEntries)*mGrowthFactor) : 2;	// Default nb Entries = 2
+	if(mMaxNbEntries<mCurNbEntries + needed)	mMaxNbEntries = mCurNbEntries + needed;
 
 	// Get some bytes for new entries
 	udword*	NewEntries = new udword[mMaxNbEntries];
@@ -110,7 +114,7 @@ bool Container::Resize()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
- *	A method to set the initial size of the container. If it already contains something, it's discarded.
+ *	Sets the initial size of the container. If it already contains something, it's discarded.
  *	\param		nb		[in] Number of entries
  *	\return		true if success
  */
@@ -139,7 +143,7 @@ bool Container::SetSize(udword nb)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
- *	A method to refit the container and get rid of unused bytes.
+ *	Refits the container and get rid of unused bytes.
  *	\return		true if success
  */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -177,7 +181,7 @@ bool Container::Refit()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
- *	A method to check whether the container already contains a given value.
+ *	Checks whether the container already contains a given value.
  *	\param		entry			[in] the value to look for in the container
  *	\param		location		[out] a possible pointer to store the entry location
  *	\see		Add(udword entry)
@@ -202,7 +206,7 @@ bool Container::Contains(udword entry, udword* location) const
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
- *	A method to delete an entry. If the container contains such an entry, it's removed.
+ *	Deletes an entry. If the container contains such an entry, it's removed.
  *	\param		entry		[in] the value to delete.
  *	\return		true if the value has been found in the container, else false.
  *	\warning	This method is arbitrary slow (O(n)) and should be used carefully. Insertion order is not preserved.
@@ -225,7 +229,7 @@ bool Container::Delete(udword entry)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
- *	A method to delete an entry, preserving the insertion order. If the container contains such an entry, it's removed.
+ *	Deletes an entry, preserving the insertion order. If the container contains such an entry, it's removed.
  *	\param		entry		[in] the value to delete.
  *	\return		true if the value has been found in the container, else false.
  *	\warning	This method is arbitrary slow (O(n)) and should be used carefully.
@@ -253,7 +257,7 @@ bool Container::DeleteKeepingOrder(udword entry)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
- *	A method to get the next entry, starting from input one.
+ *	Gets the next entry, starting from input one.
  *	\param		entry		[in/out] On input, the entry to look for. On output, the next entry
  *	\param		wrap		[in] true to wrap at the end of the array
  *	\return		Self-Reference
@@ -273,7 +277,7 @@ Container& Container::FindNext(udword& entry, bool wrap)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
- *	A method to get the previous entry, starting from input one.
+ *	Gets the previous entry, starting from input one.
  *	\param		entry		[in/out] On input, the entry to look for. On output, the previous entry
  *	\param		wrap		[in] true to wrap at the end of the array
  *	\return		Self-Reference
@@ -293,7 +297,7 @@ Container& Container::FindPrev(udword& entry, bool wrap)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
- *	A method to get the ram used by the container.
+ *	Gets the ram used by the container.
  *	\return		the ram used in bytes.
  */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

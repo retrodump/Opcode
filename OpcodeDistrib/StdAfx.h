@@ -16,6 +16,15 @@
 // Insert your headers here
 #define WIN32_LEAN_AND_MEAN		// Exclude rarely-used stuff from Windows headers
 
+//#define OPCODE_USING_ICE
+
+#ifdef OPCODE_USING_ICE
+
+	#include <ZCollide/ZCollideAFX.h>
+	using namespace ZCollide;
+
+#endif // OPCODE_USING_ICE
+
 #include "Opcode.h"
 
 //{{AFX_INSERT_LOCATION}}
