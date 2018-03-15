@@ -29,6 +29,11 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
  *	Contains a generic AABB tree.
+ *	This is a vanilla AABB tree, without any particular optimization. It contains anonymous references to
+ *	user-provided primitives, which can theoretically be anything - triangles, boxes, etc. Each primitive
+ *	is surrounded by an AABB, regardless of the primitive's nature. When the primitive is a triangle, the
+ *	resulting tree can be converted into an optimized tree. If the primitive is a box, the resulting tree
+ *	can be used for culling - VFC or occlusion -, assuming you cull on a mesh-by-mesh basis (modern way).
  *
  *	\class		AABBTree
  *	\author		Pierre Terdiman
@@ -290,6 +295,7 @@ void AABBTreeNode::_BuildHierarchy(AABBTreeBuilder* builder)
 	if(mN)	mN->_BuildHierarchy(builder);
 }
 
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
  *	Constructor.
@@ -339,6 +345,7 @@ bool AABBTree::Build(AABBTreeBuilder* builder)
 
 	// Get back total number of nodes
 	mTotalNbNodes	= builder->GetCount();
+
 	return true;
 }
 
@@ -384,4 +391,16 @@ udword AABBTree::GetUsedBytes() const
 	udword TotalSize = mTotalNbNodes*GetNodeSize();
 	if(mIndices)	TotalSize+=mNbPrimitives*sizeof(udword);
 	return TotalSize;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/**
+ *	A method to check the tree is a complete tree or not.
+ *	A complete tree is made of 2*N-1 nodes, where N is the number of primitives in the tree.
+ *	\return		true for complete trees
+ */
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool AABBTree::IsComplete() const
+{
+	return (GetNbNodes()==GetNbPrimitives()*2-1);
 }

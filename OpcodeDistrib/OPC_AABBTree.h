@@ -55,7 +55,6 @@
 		// Tree-dependent data
 						udword*				mNodePrimitives;	//!< Node-related primitives (shortcut to a position in mIndices below)
 						udword				mNbPrimitives;		//!< Number of primitives for this node
-
 		// Internal methods
 						udword				Split(udword axis, AABBTreeBuilder* builder);
 						bool				Subdivide(AABBTreeBuilder* builder);
@@ -74,6 +73,8 @@
 		__forceinline	const udword*		GetIndices()		const	{ return mIndices;		}	//!< Catch the indices
 		__forceinline	udword				GetNbNodes()		const	{ return mTotalNbNodes;	}	//!< Catch the number of nodes
 
+		// Infos
+						bool				IsComplete()		const;
 		// Stats
 						udword				ComputeDepth()		const;
 						udword				GetUsedBytes()		const;

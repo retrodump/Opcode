@@ -1,12 +1,4 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/*
- *	OPCODE - Optimized Collision Detection
- *	Copyright (C) 2001 Pierre Terdiman
- *	Homepage: http://www.codercorner.com/Opcode.htm
- */
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
  *	Contains a simple container class.
  *	\file		IceContainer.cpp
@@ -32,10 +24,6 @@
 // Precompiled Header
 #include "Stdafx.h"
 
-using namespace Opcode;
-
-#ifndef __ICECORE_H__
-
 // Static members
 #ifdef CONTAINER_STATS
 udword Container::mNbContainers = 0;
@@ -47,12 +35,26 @@ udword Container::mUsedRam = 0;
  *	Constructor. No entries allocated there.
  */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Container::Container() : mMaxNbEntries(0), mCurNbEntries(0), mEntries(null)
+Container::Container() : mMaxNbEntries(0), mCurNbEntries(0), mEntries(null), mGrowthFactor(2.0f)
 {
 #ifdef CONTAINER_STATS
 	mNbContainers++;
 	mUsedRam+=sizeof(Container);
 #endif
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/**
+ *	Constructor. Also allocates a given number of entries.
+ */
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Container::Container(udword size, float growthfactor) : mMaxNbEntries(0), mCurNbEntries(0), mEntries(null), mGrowthFactor(growthfactor)
+{
+#ifdef CONTAINER_STATS
+	mNbContainers++;
+	mUsedRam+=sizeof(Container);
+#endif
+	SetSize(size);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -82,8 +84,8 @@ bool Container::Resize()
 	mUsedRam-=mMaxNbEntries*sizeof(udword);
 #endif
 
-	// Get twice as many entries as before
-	mMaxNbEntries = mMaxNbEntries ? (mMaxNbEntries<<1) : 2;	// Default nb Entries = 2
+	// Get more entries
+	mMaxNbEntries = mMaxNbEntries ? udword(float(mMaxNbEntries)*mGrowthFactor) : 2;	// Default nb Entries = 2
 
 	// Get some bytes for new entries
 	udword*	NewEntries = new udword[mMaxNbEntries];
@@ -96,6 +98,73 @@ bool Container::Resize()
 
 	// Copy old data if needed
 	if(mCurNbEntries)	CopyMemory(NewEntries, mEntries, mCurNbEntries*sizeof(udword));
+
+	// Delete old data
+	DELETEARRAY(mEntries);
+
+	// Assign new pointer
+	mEntries = NewEntries;
+
+	return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/**
+ *	A method to set the initial size of the container. If it already contains something, it's discarded.
+ *	\param		nb		[in] Number of entries
+ *	\return		true if success
+ */
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool Container::SetSize(udword nb)
+{
+	// Make sure it's empty
+	Empty();
+
+	// Checkings
+	if(!nb)	return false;
+
+	// Initialize for nb entries
+	mMaxNbEntries = nb;
+
+	// Get some bytes for new entries
+	mEntries = new udword[mMaxNbEntries];
+	CHECKALLOC(mEntries);
+
+#ifdef CONTAINER_STATS
+	// Add current amount of bytes
+	mUsedRam+=mMaxNbEntries*sizeof(udword);
+#endif
+	return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/**
+ *	A method to refit the container and get rid of unused bytes.
+ *	\return		true if success
+ */
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool Container::Refit()
+{
+#ifdef CONTAINER_STATS
+	// Subtract previous amount of bytes
+	mUsedRam-=mMaxNbEntries*sizeof(udword);
+#endif
+
+	// Get just enough entries
+	mMaxNbEntries = mCurNbEntries;
+	if(!mMaxNbEntries)	return false;
+
+	// Get just enough bytes
+	udword*	NewEntries = new udword[mMaxNbEntries];
+	CHECKALLOC(NewEntries);
+
+#ifdef CONTAINER_STATS
+	// Add current amount of bytes
+	mUsedRam+=mMaxNbEntries*sizeof(udword);
+#endif
+
+	// Copy old data
+	CopyMemory(NewEntries, mEntries, mCurNbEntries*sizeof(udword));
 
 	// Delete old data
 	DELETEARRAY(mEntries);
@@ -136,7 +205,7 @@ bool Container::Contains(udword entry, udword* location) const
  *	A method to delete an entry. If the container contains such an entry, it's removed.
  *	\param		entry		[in] the value to delete.
  *	\return		true if the value has been found in the container, else false.
- *	\warning	this method is arbitrary slow and should be used carefully.
+ *	\warning	This method is arbitrary slow (O(n)) and should be used carefully. Insertion order is not preserved.
  */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool Container::Delete(udword entry)
@@ -147,7 +216,35 @@ bool Container::Delete(udword entry)
 		if(mEntries[i]==entry)
 		{
 			// Entry has been found at index i. The strategy is to copy the last current entry at index i, and decrement the current number of entries.
-			mEntries[i] = mEntries[--mCurNbEntries];
+			DeleteIndex(i);
+			return true;
+		}
+	}
+	return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/**
+ *	A method to delete an entry, preserving the insertion order. If the container contains such an entry, it's removed.
+ *	\param		entry		[in] the value to delete.
+ *	\return		true if the value has been found in the container, else false.
+ *	\warning	This method is arbitrary slow (O(n)) and should be used carefully.
+ */
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool Container::DeleteKeepingOrder(udword entry)
+{
+	// Look for the entry
+	for(udword i=0;i<mCurNbEntries;i++)
+	{
+		if(mEntries[i]==entry)
+		{
+			// Entry has been found at index i.
+			// Shift entries to preserve order. You really should use a linked list instead.
+			mCurNbEntries--;
+			for(udword j=i;j<mCurNbEntries;j++)
+			{
+				mEntries[j] = mEntries[j+1];
+			}
 			return true;
 		}
 	}
@@ -204,5 +301,3 @@ udword Container::GetUsedRam() const
 {
 	return sizeof(Container) + mMaxNbEntries * sizeof(udword);
 }
-
-#endif // __ICECORE_H__

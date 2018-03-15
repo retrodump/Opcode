@@ -52,4 +52,33 @@
 						uword		mExtents[3];			//!< Quantized extents
 	};
 
+	class OPCODE_API CollisionFace
+	{
+		public:
+		//! Constructor
+		__forceinline				CollisionFace()			{}
+		//! Destructor
+		__forceinline				~CollisionFace()		{}
+
+						udword		mFaceID;				//!< Index of touched face
+						float		mDistance;				//!< Distance from collider to hitpoint
+						float		mU, mV;					//!< Impact barycentric coordinates
+	};
+
+	class OPCODE_API CollisionFaces : private Container
+	{
+		public:
+		//! Constructor
+		__forceinline					CollisionFaces()						{}
+		//! Destructor
+		__forceinline					~CollisionFaces()						{}
+
+		__forceinline	udword			GetNbFaces()					const	{ return GetNbEntries()>>2;				}
+		__forceinline	CollisionFace*	GetFaces()						const	{ return (CollisionFace*)GetEntries();	}
+
+		__forceinline	void			Reset()									{ Container::Reset();					}
+
+						void			AddFace(const CollisionFace& face)		{ Add(face.mFaceID).Add(face.mDistance).Add(face.mU).Add(face.mV);	}
+	};
+
 #endif //__OPC_COMMON_H__

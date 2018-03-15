@@ -130,6 +130,9 @@ using namespace Opcode;
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 OPCODE_Model::OPCODE_Model() : mSource(null), mTree(null), mNoLeaf(false), mQuantized(false)
 {
+#ifdef __MESHMERIZER_H__	// Collision hulls only supported within ICE !
+	mHull	= null;
+#endif // __MESHMERIZER_H__
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -141,11 +144,14 @@ OPCODE_Model::~OPCODE_Model()
 {
 	DELETESINGLE(mSource);
 	DELETESINGLE(mTree);
+#ifdef __MESHMERIZER_H__	// Collision hulls only supported within ICE !
+	DELETESINGLE(mHull);
+#endif // __MESHMERIZER_H__
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
- *	A method to build a collision model.
+ *	Builds a collision model.
  *	\param		create		[in] model creation structure
  *	\return		true if success
  */
@@ -156,13 +162,11 @@ bool OPCODE_Model::Build(const OPCODECREATE& create)
 	if(!create.NbTris || !create.Tris || !create.Verts)	return false;
 
 	// In this lib, we only support complete trees
-	if(!(create.Rules&SPLIT_COMPLETE))
-	{
-		SetIceError("OPCODE WARNING: supports complete trees only! Use SPLIT_COMPLETE.\n");
-		return false;
-	}
+	if(!(create.Rules&SPLIT_COMPLETE))	return SetIceError("OPCODE WARNING: supports complete trees only! Use SPLIT_COMPLETE.\n");
 
-	// Check topology
+	// Check topology. If the model contains degenerate faces, collision report can be wrong in some cases.
+	// e.g. it happens with the standard MAX teapot. So clean your meshes first... If you don't have a mesh cleaner
+	// you can try this: www.codercorner.com/Consolidation.zip
 	const Triangle* Tris = (const Triangle*)create.Tris;
 	udword NbDegenerate = 0;
 	for(udword i=0;i<create.NbTris;i++)
@@ -170,12 +174,14 @@ bool OPCODE_Model::Build(const OPCODECREATE& create)
 		if(Tris[i].IsDegenerate())	NbDegenerate++;
 	}
 	if(NbDegenerate)	Log("OPCODE WARNING: found %d degenerate faces in model! Collision might report wrong results!\n", NbDegenerate);
+	// We continue nonetheless.... 
 
 	// 2) Build a generic AABB Tree.
 	mSource = new AABBTree;
 	CHECKALLOC(mSource);
 
-	// Setup a builder
+	// 2-1) Setup a builder. Our primitives here are triangles from input mesh,
+	// so we use an AABBTreeOfTrianglesBuilder.....
 	AABBTreeOfTrianglesBuilder TB;
 	TB.mTriList			= Tris;
 	TB.mVerts			= create.Verts;
@@ -184,6 +190,7 @@ bool OPCODE_Model::Build(const OPCODECREATE& create)
 	if(!mSource->Build(&TB))	return false;
 
 	// 3) Create an optimized tree according to user-settings
+	// 3-1) Create the correct class
 	mNoLeaf		= create.NoLeaf;
 	mQuantized	= create.Quantized;
 
@@ -199,11 +206,28 @@ bool OPCODE_Model::Build(const OPCODECREATE& create)
 	}
 	CHECKALLOC(mTree);
 
-	// Create optimized tree
+	// 3-2) Create optimized tree
 	if(!mTree->Build(mSource))	return false;
 
-	// Delete generic tree if needed
+	// 3-3) Delete generic tree if needed
 	if(!create.KeepOriginal)	DELETESINGLE(mSource);
 
+#ifdef __MESHMERIZER_H__
+	// 4) Convex hull
+	if(create.CollisionHull)
+	{
+		// Create hull
+		mHull = new CollisionHull;
+		CHECKALLOC(mHull);
+
+		CONVEXHULLCREATE CHC;
+		CHC.NbVerts			= create.NbVerts;
+		CHC.Vertices		= create.Verts;
+		CHC.UnifyNormals	= true;
+		CHC.ReduceVertices	= true;
+		CHC.WordFaces		= false;
+		mHull->Compute(CHC);
+	}
+#endif // __MESHMERIZER_H__
 	return true;
 }

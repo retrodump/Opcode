@@ -1,15 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/*
- *	OPCODE - Optimized Collision Detection
- *	Copyright (C) 2001 Pierre Terdiman
- *	Homepage: http://www.codercorner.com/Opcode.htm
- */
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
- *	Contains a triangle class.
- *	\file		OPC_Triangle.h
+ *	Contains a handy triangle class.
+ *	\file		IceTriangle.h
  *	\author		Pierre Terdiman
  *	\date		January, 17, 2000
  */
@@ -21,15 +13,15 @@
 #define __ICETRIANGLE_H__
 
 	// An indexed triangle class.
-	class OPCODE_API Triangle
+	class MESHMERIZER_API Triangle
 	{
 		public:
 		//! Constructor
-											Triangle()									{}
+		__forceinline						Triangle()									{}
 		//! Constructor
-											Triangle(udword r0, udword r1, udword r2)	{ mVRef[0]=r0; mVRef[1]=r1; mVRef[2]=r2; }
+		__forceinline						Triangle(udword r0, udword r1, udword r2)	{ mVRef[0]=r0; mVRef[1]=r1; mVRef[2]=r2; }
 		//! Destructor
-											~Triangle()									{}
+		__forceinline						~Triangle()									{}
 		//! Vertex-references
 						udword				mVRef[3];
 

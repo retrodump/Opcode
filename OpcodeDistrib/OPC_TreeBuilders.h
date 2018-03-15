@@ -72,6 +72,7 @@
 		__forceinline	void				SetCount(udword nb)			{ mCount=nb;			}
 		__forceinline	void				IncreaseCount(udword nb)	{ mCount+=nb;			}
 		__forceinline	udword				GetCount()			const	{ return mCount;		}
+
 		private:
 						udword				mCount;				//!< Stats: number of nodes created
 	};
@@ -80,30 +81,30 @@
 	{
 		public:
 		//! Constructor
-											AABBTreeOfAABBsBuilder() : mAABBList(null)	{}
+												AABBTreeOfAABBsBuilder() : mAABBList(null)	{}
 		//! Destructor
-		virtual								~AABBTreeOfAABBsBuilder()					{}
+		virtual									~AABBTreeOfAABBsBuilder()					{}
 
-		virtual			bool				ComputeGlobalBox(udword* primitives, udword nbprims, AABB& globalbox) const;
-		virtual			float				GetSplittingValue(udword index, udword axis) const;
+		override(AABBTreeBuilder)	bool		ComputeGlobalBox(udword* primitives, udword nbprims, AABB& globalbox) const;
+		override(AABBTreeBuilder)	float		GetSplittingValue(udword index, udword axis) const;
 
-		const			AABB*				mAABBList;			//!< Shortcut to an app-controlled list of AABBs.
+		const						AABB*		mAABBList;			//!< Shortcut to an app-controlled list of AABBs.
 	};
 
 	class OPCODE_API AABBTreeOfTrianglesBuilder : public AABBTreeBuilder
 	{
 		public:
 		//! Constructor
-											AABBTreeOfTrianglesBuilder() : mTriList(null), mNbTriangles(0)	{}
+												AABBTreeOfTrianglesBuilder() : mTriList(null), mNbTriangles(0)	{}
 		//! Destructor
-		virtual								~AABBTreeOfTrianglesBuilder()									{}
+		virtual									~AABBTreeOfTrianglesBuilder()									{}
 
-		virtual			bool				ComputeGlobalBox(udword* primitives, udword nbprims, AABB& globalbox) const;
-		virtual			float				GetSplittingValue(udword index, udword axis) const;
+		override(AABBTreeBuilder)	bool		ComputeGlobalBox(udword* primitives, udword nbprims, AABB& globalbox) const;
+		override(AABBTreeBuilder)	float		GetSplittingValue(udword index, udword axis) const;
 
-		const			Triangle*			mTriList;			//!< Shortcut to an app-controlled list of triangles.
-		const			Point*				mVerts;				//!< Shortcut to an app-controlled list of vertices.
-		const			udword				mNbTriangles;		//!< Total number of triangles.
+		const						Triangle*	mTriList;			//!< Shortcut to an app-controlled list of triangles.
+		const						Point*		mVerts;				//!< Shortcut to an app-controlled list of vertices.
+		const						udword		mNbTriangles;		//!< Total number of triangles.
 	};
 
 #endif // __OPC_TREEBUILDERS_H__

@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "OPCODEDISTRIB_EXPORTS" /Yu"stdafx.h" /FD /c
-# ADD CPP /nologo /G6 /MD /W3 /GX- /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "OPCODEDISTRIB_EXPORTS" /Yu"stdafx.h" /FD /c
+# ADD CPP /nologo /G6 /MD /W3 /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "OPCODEDISTRIB_EXPORTS" /Yu"stdafx.h" /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x40c /d "NDEBUG"
@@ -72,8 +72,8 @@ PostBuild_Cmds=xcopy release\Opcode.lib y:\lib /Q /Y	xcopy *.h Y:\inc /Q /Y	del 
 # PROP Intermediate_Dir "Debug"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "OPCODEDISTRIB_EXPORTS" /Yu"stdafx.h" /FD /GZ  /c
-# ADD CPP /nologo /G6 /MDd /W3 /Gm /GX- /Zi /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "OPCODEDISTRIB_EXPORTS" /FR /Yu"stdafx.h" /FD /GZ  /c
+# ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "OPCODEDISTRIB_EXPORTS" /Yu"stdafx.h" /FD /GZ /c
+# ADD CPP /nologo /G6 /MDd /W3 /Gm /Zi /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "OPCODEDISTRIB_EXPORTS" /FR /Yu"stdafx.h" /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x40c /d "_DEBUG"
@@ -108,6 +108,10 @@ SOURCE=.\OPC_Model.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\OPC_Settings.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\Opcode.cpp
 # End Source File
 # Begin Source File
@@ -127,6 +131,42 @@ SOURCE=.\StdAfx.h
 # Begin Group "Trees"
 
 # PROP Default_Filter ""
+# Begin Group "Queries"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\OPC_Collider.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\OPC_Collider.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\OPC_RayCollider.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\OPC_RayCollider.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\OPC_SphereCollider.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\OPC_SphereCollider.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\OPC_TreeCollider.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\OPC_TreeCollider.h
+# End Source File
+# End Group
 # Begin Source File
 
 SOURCE=.\OPC_AABBTree.cpp
@@ -134,6 +174,10 @@ SOURCE=.\OPC_AABBTree.cpp
 # Begin Source File
 
 SOURCE=.\OPC_AABBTree.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\OPC_BVTCache.h
 # End Source File
 # Begin Source File
 
@@ -159,77 +203,121 @@ SOURCE=.\OPC_TreeBuilders.cpp
 
 SOURCE=.\OPC_TreeBuilders.h
 # End Source File
-# Begin Source File
-
-SOURCE=.\OPC_TreeCollider.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\OPC_TreeCollider.h
-# End Source File
 # End Group
-# Begin Group "ICE utils"
+# Begin Group "Overlap tests"
 
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=.\OPC_AABB.cpp
+SOURCE=.\OPC_BoxBoxOverlap.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\OPC_AABB.h
+SOURCE=.\OPC_RayAABBOverlap.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\OPC_Container.cpp
+SOURCE=.\OPC_RayTriOverlap.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\OPC_Container.h
+SOURCE=.\OPC_SphereAABBOverlap.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\OPC_FPU.h
+SOURCE=.\OPC_SphereTriOverlap.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\OPC_Matrix3x3.cpp
+SOURCE=.\OPC_TriBoxOverlap.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\OPC_Matrix3x3.h
+SOURCE=.\OPC_TriTriOverlap.h
+# End Source File
+# End Group
+# Begin Group "ICE code"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\IceAABB.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\OPC_Matrix4x4.cpp
+SOURCE=.\IceAABB.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\OPC_Matrix4x4.h
+SOURCE=.\IceBoundingSphere.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\OPC_MemoryMacros.h
+SOURCE=.\IceContainer.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\OPC_Point.cpp
+SOURCE=.\IceContainer.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\OPC_Point.h
+SOURCE=.\IceFPU.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\OPC_Triangle.cpp
+SOURCE=.\IceHPoint.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\OPC_Triangle.h
+SOURCE=.\IceMatrix3x3.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\OPC_Types.h
+SOURCE=.\IceMatrix3x3.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\IceMatrix4x4.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\IceMatrix4x4.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\IceMemoryMacros.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\IcePlane.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\IcePoint.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\IcePoint.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\IceRandom.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\IceRay.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\IceTriangle.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\IceTriangle.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\IceTypes.h
 # End Source File
 # End Group
 # Begin Source File

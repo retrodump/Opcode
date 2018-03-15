@@ -58,43 +58,69 @@
 	#endif
 
 	#define	Log
-	#define	SetIceError
-	#define	gEC_OutOfMemory	0
+	#define	SetIceError		false
+	#define	EC_OUTOFMEMORY	"Out of memory"
 	#define	Alignment
+	#define ICECORE_API		OPCODE_API
+	#define	override(baseclass)	virtual
 
-	#include "OPC_Types.h"
-	#include "OPC_FPU.h"
-	#include "OPC_MemoryMacros.h"
+	// IceCore includes
+	#include "IceTypes.h"
+	#include "IceFPU.h"
+	#include "IceMemoryMacros.h"
+	#include "IceContainer.h"
+	#include "IceRandom.h"
 #endif
 
 #ifndef __ICEMATHS_H__
 	#include <Math.h>
+
+	#define ICEMATHS_API	OPCODE_API
+
+	class HPoint;
+	class Matrix3x3;
+	class Matrix4x4;
+	class Quat;
+	class PRS;
+	class PR;
+
+	// IceMaths includes
+	#include "IcePoint.h"
+	#include "IceHPoint.h"
+	#include "IceMatrix3x3.h"
+	#include "IceMatrix4x4.h"
+	#include "IceRay.h"
+#endif
+
+
+#ifndef __MESHMERIZER_H__
+
+	#define MESHMERIZER_API	OPCODE_API
+
+	enum CubeIndex;
+	class Plane;
+	class ProgressiveEigen;
+
+	// Meshmerizer includes
+	#include "IceTriangle.h"
+	#include "IceAABB.h"
+	#include "IceBoundingSphere.h"
 #endif
 
 	namespace Opcode
 	{
-#ifndef __ICECORE_H__
-		#include "OPC_Container.h"
-#endif
-
-#ifndef __ICEMATHS_H__
-		#include "OPC_Point.h"
-		#include "OPC_Matrix3x3.h"
-		#include "OPC_Matrix4x4.h"
-#endif
-
-#ifndef __MESHMERIZER_H__
-		#include "OPC_Triangle.h"
-		#include "OPC_AABB.h"
-#endif
-
 		// Bulk-of-the-work
+		#include "OPC_Settings.h"
 		#include "OPC_Common.h"
 		#include "OPC_TreeBuilders.h"
 		#include "OPC_AABBTree.h"
 		#include "OPC_OptimizedTree.h"
 		#include "OPC_Model.h"
+		#include "OPC_BVTCache.h"
+		#include "OPC_Collider.h"
 		#include "OPC_TreeCollider.h"
+		#include "OPC_RayCollider.h"
+		#include "OPC_SphereCollider.h"
 	}
 
 #endif // __OPCODE_H__

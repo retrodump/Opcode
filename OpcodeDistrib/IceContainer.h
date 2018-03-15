@@ -1,12 +1,4 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/*
- *	OPCODE - Optimized Collision Detection
- *	Copyright (C) 2001 Pierre Terdiman
- *	Homepage: http://www.codercorner.com/Opcode.htm
- */
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
  *	Contains a simple container class.
  *	\file		IceContainer.h
@@ -22,11 +14,12 @@
 
 	#define CONTAINER_STATS
 
-	class OPCODE_API Container
+	class ICECORE_API Container
 	{
 		public:
 		// Constructor / Destructor
 										Container();
+										Container(udword size, float growthfactor);
 										~Container();
 		// Management
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -104,39 +97,72 @@
 		 *	A method to reset the container. Stored values are discarded but the buffer is kept so that further calls don't need resizing again.
 		 *	That's a kind of temporal coherence.
 		 *	\see		Empty()
-		 *	\return		Self-Reference
 		 */
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		__forceinline	Container&		Reset()
+		__forceinline	void			Reset()
 						{
-							mCurNbEntries = 0;
-							return *this;
+							// Avoid the write if possible
+							// ### CMOV
+							if(mCurNbEntries)	mCurNbEntries = 0;
 						}
+
+		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		/**
+		 *	A method to set the initial size of the container. If it already contains something, it's discarded.
+		 *	\param		nb		[in] Number of entries
+		 *	\return		true if success
+		 */
+		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+						bool			SetSize(udword nb);
+
+		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		/**
+		 *	A method to refit the container and get rid of unused bytes.
+		 *	\return		true if success
+		 */
+		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+						bool			Refit();
 
 		// A method to check whether the container already contains a given value.
 						bool			Contains(udword entry, udword* location=null) const;
-		// A method to delete an entry.
+		// A method to delete an entry - doesn't preserve insertion order.
 						bool			Delete(udword entry);
+		// A method to delete an entry - does preserve insertion order.
+						bool			DeleteKeepingOrder(udword entry);
 		//! A method to delete the very last entry.
-		__forceinline	void			DeleteLastEntry()			{ if(mCurNbEntries)	mCurNbEntries--;			}
+		__forceinline	void			DeleteLastEntry()						{ if(mCurNbEntries)	mCurNbEntries--;			}
 		//! A method to delete the entry whose index is given
-		__forceinline	void			DeleteIndex(udword index)	{ mEntries[index] = mEntries[--mCurNbEntries];	}
+		__forceinline	void			DeleteIndex(udword index)				{ mEntries[index] = mEntries[--mCurNbEntries];	}
 
 		// Helpers
 						Container&		FindNext(udword& entry, bool wrap=false);
 						Container&		FindPrev(udword& entry, bool wrap=false);
 		// Data access.
-		__forceinline	udword			GetNbEntries()		const	{ return mCurNbEntries;	}	//!< Returns the current number of entries.
-		__forceinline	udword			GetEntry(udword i)	const	{ return mEntries[i];	}	//!< Returns ith entry
-		__forceinline	udword*			GetEntries()		const	{ return mEntries;		}	//!< Returns the list of entries.
+		__forceinline	udword			GetNbEntries()					const	{ return mCurNbEntries;		}	//!< Returns the current number of entries.
+		__forceinline	udword			GetEntry(udword i)				const	{ return mEntries[i];		}	//!< Returns ith entry
+		__forceinline	udword*			GetEntries()					const	{ return mEntries;			}	//!< Returns the list of entries.
+
+		// Growth control
+		__forceinline	float			GetGrowthFactor()				const	{ return mGrowthFactor;		}	//!< Returns the growth factor
+		__forceinline	void			SetGrowthFactor(float growth)			{ mGrowthFactor = growth;	}	//!< Sets the growth factor
+
 		//! Access as an array
-		__forceinline	udword&			operator[](udword i)const	{ ASSERT(i>=0 && i<mCurNbEntries); return mEntries[i];	}
+		__forceinline	udword&			operator[](udword i)			const	{ ASSERT(i>=0 && i<mCurNbEntries); return mEntries[i];	}
 
 		// Stats
-						udword			GetUsedRam()		const;
+						udword			GetUsedRam()					const;
+
+		//! Operator for Container A = Container B
+						void			operator = (const Container& object)
+						{
+							SetSize(object.GetNbEntries());
+							CopyMemory(mEntries, object.GetEntries(), mMaxNbEntries*sizeof(udword));
+							mCurNbEntries = mMaxNbEntries;
+						}
+
 #ifdef CONTAINER_STATS
-		__forceinline	udword			GetNbContainers()	const	{ return mNbContainers;	}
-		__forceinline	udword			GetTotalBytes()		const	{ return mUsedRam;		}
+		__forceinline	udword			GetNbContainers()				const	{ return mNbContainers;		}
+		__forceinline	udword			GetTotalBytes()					const	{ return mUsedRam;			}
 		private:
 
 		static			udword			mNbContainers;		//!< Number of containers around
@@ -149,6 +175,7 @@
 						udword			mMaxNbEntries;		//!< Maximum possible number of entries
 						udword			mCurNbEntries;		//!< Current number of entries
 						udword*			mEntries;			//!< List of entries
+						float			mGrowthFactor;		//!< Resize: new number of entries = old number * mGrowthFactor
 	};
 
 #endif // __ICECONTAINER_H__

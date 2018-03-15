@@ -245,6 +245,7 @@ bool AABBCollisionTree::Build(AABBTree* tree)
 	Log("Original tree: %d nodes, depth %d\n", NbNodes, tree->ComputeDepth());
 	Log("AABB Collision tree: %d nodes, %d bytes - Alignment: %d\n", mNbNodes, GetUsedBytes(), Alignment(udword(mNodes)));
 #endif
+
 	return true;
 }
 
@@ -297,6 +298,7 @@ bool AABBNoLeafTree::Build(AABBTree* tree)
 	Log("Original tree: %d nodes, depth %d\n", NbNodes, tree->ComputeDepth());
 	Log("AABB quantized tree: %d nodes, %d bytes - Alignment: %d\n", mNbNodes, GetUsedBytes(), Alignment(udword(mNodes)));
 #endif
+
 	return true;
 }
 
@@ -313,6 +315,7 @@ bool AABBNoLeafTree::Build(AABBTree* tree)
 // - The deeper we move into the hierarchy, the smaller the extents should be. May not need a fixed
 //   number of quantization bits. Even better, could probably be best delta-encoded.
 
+// Find max values (could use the first node only with min/max boxes)
 #define FIND_MAX_VALUES																			\
 	/* Get max values */																		\
 	Point CMax(MIN_FLOAT, MIN_FLOAT, MIN_FLOAT);												\
@@ -542,5 +545,6 @@ bool AABBQuantizedNoLeafTree::Build(AABBTree* tree)
 	Log("Original tree: %d nodes, depth %d\n", NbNodes, tree->ComputeDepth());
 	Log("AABB quantized no-leaf tree: %d nodes, %d bytes - Alignment: %d\n", mNbNodes, GetUsedBytes(), Alignment(udword(mNodes)));
 #endif
+
 	return true;
 }
